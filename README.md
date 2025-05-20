@@ -99,4 +99,6 @@ This module is part of the broader research & engineering project:
 
 ## 📄 License
 
-Apache License — feel free to use, modify, and contribute!
+[Apache License 2.0](https://github.com/tph-kds/AVPoetica/LICENSE) — feel free to use, modify, and contribute!
+
+> *💡 Happy AI Learning & Building!*
