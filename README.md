@@ -88,7 +88,7 @@ This module is part of the broader research & engineering project:
 
 ---
 
-## 🧠 Full Interpretation:
+## 🕸️ Full Interpretation:
 >“AV-Poetica” symbolizes an AI Agent (A) dedicated to crafting or enhancing Vietnamese (V) poetry with an elegant, creative, and artistic poetic style (Poetica).
 
 **It can be interpreted as:**
