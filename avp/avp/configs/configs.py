@@ -12,26 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""COnfigs used as Environment variables for Agent Development Kit Project."""
 
-"""Demonstration of Travel AI Conceirge using Agent Development Kit"""
-
-
-from google.adk.agents import Agent 
-from prompt import prompt 
-from tools.memory import _load_precreated_itinerary
-
-from configs import (
-    configs,
-    constant
-)
-
-root_agent = Agent(
-    model = configs.BASE_MODEL_NAME,
-    name = configs.AGENT_NAME,
-    description = configs.AGENT_DESCRIPTION,
-    instruction = prompt.ROOT_AGENT_INSTR, 
-    sub_agents = [
-        ...
-    ],
-    before_agent_callback=_load_precreated_itinerary
-)
+BASE_MODEL_NAME = "gemini-2.0-flash-001"
+AGENT_NAME = "root_agent"
+AGENT_DESCRIPTION = "A Travel Conceirge using the services of multiple sub-agents"
+SAMPLE_SCENARIO_PATH = "avp/avp/configs/sample_scenario.json"
