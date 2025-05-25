@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-"""Demonstration of Travel AI Conceirge using Agent Development Kit"""
+"""Demonstration of AVP Workflow using Agent Development Kit"""
 
 
 from google.adk.agents import Agent 
-from prompt import prompt 
+from prompt import ROOT_AGENT_INSTR
 from tools.memory import _load_precreated_itinerary
 
 from configs import (
@@ -25,13 +25,21 @@ from configs import (
     constant
 )
 
+from .sub_agents import (
+    critic_agent,
+    lt_agent,
+    spa_agent,
+)
+
 root_agent = Agent(
     model = configs.BASE_MODEL_NAME,
-    name = configs.AGENT_NAME,
-    description = configs.AGENT_DESCRIPTION,
-    instruction = prompt.ROOT_AGENT_INSTR, 
+    name = configs.ROOT_AGENT_NAME,
+    description = configs.ROOT_AGENT_DESCRIPTION,
+    instruction = ROOT_AGENT_INSTR, 
     sub_agents = [
-        ...
+        critic_agent,
+        lt_agent,
+        spa_agent
     ],
     before_agent_callback=_load_precreated_itinerary
 )
