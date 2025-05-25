@@ -26,13 +26,13 @@ lt_agent = Agent(
     model = configs.BASE_MODEL_NAME,
     name = configs.LAT_AGENT_NAME,
     description = configs.LAT_AGENT_DESCRIPTION,
-    instruction = prompt.LAT_AGENT_INSTR,
-    before_agent_callback=CallbackContext(
-        invocation_context="critic_agent_before_callback",
-        event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
-    ),
-    after_agent_callback=CallbackContext(
-        invocation_context="critic_agent_after_callback",
-        event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
-    )
+    instruction = prompt.LT_AGENT_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
+    # )
 )

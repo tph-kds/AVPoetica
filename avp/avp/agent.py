@@ -17,10 +17,14 @@
 
 
 from google.adk.agents import Agent 
-from prompt import ROOT_AGENT_INSTR
-from tools.memory import _load_precreated_itinerary
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models import LlmResponse
 
-from configs import (
+
+from .prompt import ROOT_AGENT_INSTR
+from .tools import _load_precreated_itinerary
+
+from .configs import (
     configs,
     constant
 )
@@ -41,5 +45,13 @@ root_agent = Agent(
         lt_agent,
         spa_agent
     ],
-    before_agent_callback=_load_precreated_itinerary
+    # before_agent_callback=_load_precreated_itinerary
+    #     before_agent_callback=CallbackContext(
+    #     invocation_context="poetry_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "AVP Root Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="poetry_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "AVP Root Agent Result")
+    # )
 )

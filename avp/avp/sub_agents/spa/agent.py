@@ -27,13 +27,13 @@ spa_agent = Agent(
     name = configs.SAP_AGENT_NAME,
     description = configs.SAP_AGENT_DESCRIPTION,
     instruction = prompt.SP_AGENT_INSTR,
-    before_agent_callback=CallbackContext(
-        invocation_context="spa_agent_before_callback",
-        event_actions=lambda context: context.set("task", "SPA Agent Task")
-    ),
-    after_agent_callback=CallbackContext(
-        invocation_context="spa_agent_after_callback",
-        event_actions=lambda context: context.set("result", "SPA Agent Result")
-    )
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "SPA Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "SPA Agent Result")
+    # )
 
 )
