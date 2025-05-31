@@ -14,19 +14,20 @@
 
 """ Defines the L&TA Critic Agent in the AVP ai agent. """
 
-from google.adk.agents import Agent
-from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
+from google.adk.agents import Agent, LlmAgent, SequentialAgent
+from google.adk.agents.callback_context import CallbackContext
 
 
 from . import prompt
 from avp.avp.configs import configs
 
-lt_agent = Agent(
+
+semantic_consistency_agent = LlmAgent(
     model = configs.BASE_MODEL_NAME,
-    name = configs.LAT_AGENT_NAME,
-    description = configs.LAT_AGENT_DESCRIPTION,
-    instruction = prompt.LT_AGENT_INSTR,
+    name = configs.SEMANTIC_CONSISTENCY_AGENT_NAME,
+    description = configs.SEMANTIC_CONSISTENCY_AGENT_DESCRIPTION,
+    instruction = prompt.SEMANTIC_CONSISTENCY_INSTR,
     # before_agent_callback=CallbackContext(
     #     invocation_context="critic_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
@@ -35,4 +36,47 @@ lt_agent = Agent(
     #     invocation_context="critic_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
     # )
+)
+
+
+cutural_context_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.CULTURAL_CONTEXT_AGENT_NAME,
+    description = configs.CULTURAL_CONTEXT_AGENT_DESCRIPTION,
+    instruction = prompt.CULTURAL_CONTEXT_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
+    # )
+)
+
+
+style_conformity_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.STYLE_CONFORMITY_AGENT_NAME,
+    description = configs.STYLE_CONFORMITY_AGENT_DESCRIPTION,
+    instruction = prompt.STYLE_CONFORMITY_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
+    # )
+)
+
+
+lt_agent = SequentialAgent(
+    name = configs.LAT_AGENT_NAME,
+    description = configs.LAT_AGENT_DESCRIPTION,
+    sub_agents=[
+        semantic_consistency_agent, 
+        cutural_context_agent, 
+        style_conformity_agent
+    ]
 )

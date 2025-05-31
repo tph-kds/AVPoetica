@@ -14,7 +14,7 @@
 
 """ Defines the Critic Agent in the AVP ai agent. """
 
-from google.adk.agents import Agent
+from google.adk.agents import Agent, LlmAgent, SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 
@@ -22,11 +22,11 @@ from google.adk.models import LlmResponse
 from . import prompt
 from avp.avp.configs import configs
 
-critic_agent = Agent(
+post_processing_agent = LlmAgent(
     model = configs.BASE_MODEL_NAME,
-    name = configs.CRITIC_AGENT_NAME,
-    description = configs.CRITIC_AGENT_DESCRIPTION,
-    instruction = prompt.CRITIC_AGENT_INSTR,
+    name = configs.POST_PROCESSING_AGENT_NAME,
+    description = configs.POST_PROCESSING_AGENT_DESCRIPTION,
+    instruction = prompt.POST_PROCESSING_INSTR,
     # before_agent_callback=CallbackContext(
     #     invocation_context="critic_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
@@ -35,4 +35,44 @@ critic_agent = Agent(
     #     invocation_context="critic_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
     # )
+)
+
+formatter_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.FORMATTER_AGENT_NAME,
+    description = configs.FORMATTER_AGENT_DESCRIPTION,
+    instruction = prompt.FORMATTER_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
+    # )
+)
+
+feedback_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.FEEDBACK_AGENT_NAME,
+    description = configs.FEEDBACK_AGENT_DESCRIPTION,
+    instruction = prompt.FEEDBACK_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "L&TA Critic Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="critic_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "L&TA Critic Agent Result")
+    # )
+)
+
+critic_agent = SequentialAgent(
+    name = configs.CRITIC_AGENT_NAME,
+    description = configs.CRITIC_AGENT_DESCRIPTION,
+    sub_agents=[
+        post_processing_agent, 
+        formatter_agent, 
+        feedback_agent
+    ]
 )

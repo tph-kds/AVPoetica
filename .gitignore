@@ -177,5 +177,6 @@ cython_debug/
 avp_env/*
 
 # Local files
-note.md 
+note.md
+**/prompt_test.py 
 

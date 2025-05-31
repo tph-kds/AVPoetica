@@ -14,7 +14,7 @@
 
 """ Defines the SPA Critic Agent in the AVP ai agent. """
 
-from google.adk.agents import Agent
+from google.adk.agents import Agent, LlmAgent, SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 
@@ -22,11 +22,14 @@ from google.adk.models import LlmResponse
 from . import prompt
 from avp.avp.configs import configs
 
-spa_agent = Agent(
+
+
+
+metre_agent = LlmAgent(
     model = configs.BASE_MODEL_NAME,
-    name = configs.SAP_AGENT_NAME,
-    description = configs.SAP_AGENT_DESCRIPTION,
-    instruction = prompt.SP_AGENT_INSTR,
+    name = configs.METRE_CORRECTION_AGENT_NAME,
+    description = configs.METRE_CORRECTION_AGENT_DESCRIPTION,
+    instruction = prompt.METRE_INSTR,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
@@ -35,5 +38,48 @@ spa_agent = Agent(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
     # )
+
+)
+
+rhyme_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.RHYME_REFINEMENT_AGENT_NAME,
+    description = configs.RHYME_REFINEMENT_AGENT_DESCRIPTION,
+    instruction = prompt.RHYME_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "SPA Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "SPA Agent Result")
+    # )
+
+)
+
+tone_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.TONE_CLASSIFIER_AGENT_NAME,
+    description = configs.TONE_CLASSIFIER_AGENT_DESCRIPTION,
+    instruction = prompt.TONE_INSTR,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "SPA Agent Task")
+    # ),
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "SPA Agent Result")
+    # )
+
+)
+
+spa_agent = SequentialAgent(
+    name = configs.SAP_AGENT_NAME,
+    description = configs.SAP_AGENT_DESCRIPTION,
+    sub_agents=[
+        metre_agent, 
+        rhyme_agent, 
+        tone_agent
+    ]
 
 )

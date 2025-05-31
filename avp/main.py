@@ -64,3 +64,11 @@ def call_agent(
             print(f"Final response: {final_response}")
 
     return final_response
+
+
+if __name__ == "__main__":
+    runner = create_agent()
+    while True:
+        query = input("Enter a prompt: ")
+        response = call_agent(runner, query)
+        print(response)

@@ -27,6 +27,7 @@ ROOT_AGENT_DESCRIPTION = (
     "from initial poem ingestion to final output, by intelligently dispatching tasks "
     "to specialized agents and synthesizing their findings."
 )
+ROOT_OUTPUT_KEY = "final_poem"
 
 
 # ------ Sub-agent configurations ------
@@ -75,11 +76,11 @@ SAP_AGENT_DESCRIPTION = (
     "ensuring it aligns with the desired poetic form and style."
 )
 # ------
-INPUT_PREPROCESSOR_AGENT_NAME = "input_preprocessor_agent"
-INPUT_PREPROCESSOR_AGENT_DESCRIPTION = (
-    "responsible for cleaning, normalizing, and parsing the input poem text, "
-    "ensuring it is ready for further analysis, adjustments, creation and refinement."
-)
+# INPUT_PREPROCESSOR_AGENT_NAME = "input_preprocessor_agent"
+# INPUT_PREPROCESSOR_AGENT_DESCRIPTION = (
+#     "responsible for cleaning, normalizing, and parsing the input poem text, "
+#     "ensuring it is ready for further analysis, adjustments, creation and refinement."
+# )
 # ------
 TONE_CLASSIFIER_AGENT_NAME = "tone_classifier_agent"
 TONE_CLASSIFIER_AGENT_DESCRIPTION = (
