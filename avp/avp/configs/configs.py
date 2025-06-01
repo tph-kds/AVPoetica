@@ -88,6 +88,7 @@ TONE_CLASSIFIER_AGENT_DESCRIPTION = (
     "identifying its emotional and thematic elements, "
     "and providing insights into the poem's mood and atmosphere."
 )
+TONE_OUTPUT_KEY = "tone_output"
 # ------
 METRE_CORRECTION_AGENT_NAME = "metre_correction_agent"
 METRE_CORRECTION_AGENT_DESCRIPTION = (
@@ -95,6 +96,7 @@ METRE_CORRECTION_AGENT_DESCRIPTION = (
     "ensuring it adheres to the desired poetic form, "
     "and making necessary adjustments to the rhythm and meter."
 )
+METRE_OUTPUT_KEY = "metre_output"
 # ------
 RHYME_REFINEMENT_AGENT_NAME = "rhyme_refinement_agent"
 RHYME_REFINEMENT_AGENT_DESCRIPTION = (
@@ -102,6 +104,7 @@ RHYME_REFINEMENT_AGENT_DESCRIPTION = (
     "ensuring it aligns with the desired poetic form, "
     "and enhancing the musicality of the poem through effective rhyme."
 )
+RHYME_OUTPUT_KEY = "rhyme_output"
 # ------
 
 

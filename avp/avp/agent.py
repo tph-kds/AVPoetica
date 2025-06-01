@@ -35,6 +35,9 @@ from .sub_agents import (
     spa_agent,
 )
 
+test_agent = spa_agent
+
+
 root_agent = LlmAgent(
     model = configs.BASE_MODEL_NAME,
     name = configs.ROOT_AGENT_NAME,
@@ -57,4 +60,19 @@ root_agent = LlmAgent(
     # )
 )
 
-# Example: This is a original poem input: cởi trời xanh cởi đất nâu\n gió mây hờn dỗi bạc nâu nhớ nhung\n bạc đầu tóc trắng da nhung\n cõi tình thế giới ai nhung lưng sầu\n nhớ quê hương nhớ nhuộm sầu\n tóc thề vương vấn đôi sầu vai tròn\n đêm buồn ngắm ánh trăng tròn\n ngẩn ngơ ôm bóng mỏi tròn năm canh. Let's improve my poem input above about both how to use smooth sentence and suitable both in rhyme and in the setting of even or odd tones in the sentence.
+# Example: 
+# This is a original poem input: 
+# cởi trời xanh cởi đất nâu\n 
+# gió mây hờn dỗi bạc nâu nhớ nhung\n 
+# bạc đầu tóc trắng da nhung\n 
+# cõi tình thế giới ai nhung lưng sầu\n 
+# nhớ quê hương nhớ nhuộm sầu\n 
+# tóc thề vương vấn đôi sầu vai tròn\n 
+# đêm buồn ngắm ánh trăng tròn\n 
+# ngẩn ngơ ôm bóng mỏi tròn năm canh. 
+# This is a type of poem: LỤC BÁT.
+# Let's improve my poem input above about both how to use smooth sentence and suitable both in rhyme and in the setting of even or odd tones in the sentence.
+
+
+
+#  This is a original poem input:  cởi trời xanh cởi đất nâu\n  gió mây hờn dỗi bạc nâu nhớ nhung\n  bạc đầu tóc trắng da nhung\n  cõi tình thế giới ai nhung lưng sầu\n  nhớ quê hương nhớ nhuộm sầu\n  tóc thề vương vấn đôi sầu vai tròn\n  đêm buồn ngắm ánh trăng tròn\n  ngẩn ngơ ôm bóng mỏi tròn năm canh.  This is a type of poem: LỤC BÁT. Let's improve my poem input above about both how to use smooth sentence and suitable both in rhyme and in the setting of even or odd tones in the sentence.

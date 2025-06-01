@@ -22,6 +22,14 @@ from google.adk.models import LlmResponse
 from . import prompt
 # from avp.avp.configs import configs
 from ...configs import configs
+from .schemas import (
+    MetreSchemaInput,
+    MetreSchemaOutput,
+    RhymeSchemaInput,
+    RhymeSchemaOutput,
+    ToneSchemaInput,
+    ToneSchemaOutput
+)
 
 
 
@@ -31,6 +39,9 @@ metre_agent = LlmAgent(
     name = configs.METRE_CORRECTION_AGENT_NAME,
     description = configs.METRE_CORRECTION_AGENT_DESCRIPTION,
     instruction = prompt.METRE_INSTR,
+    input_schema=MetreSchemaInput, # Define the input schema Format
+    output_schema=MetreSchemaOutput, # Define the output schema Format
+    output_key=configs.METRE_OUTPUT_KEY, # Store the metre output (JSON response) in this key
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
@@ -47,6 +58,9 @@ rhyme_agent = LlmAgent(
     name = configs.RHYME_REFINEMENT_AGENT_NAME,
     description = configs.RHYME_REFINEMENT_AGENT_DESCRIPTION,
     instruction = prompt.RHYME_INSTR,
+    input_schema=RhymeSchemaInput, # Define the input schema Format
+    output_schema=RhymeSchemaOutput, # Define the output schema Format
+    output_key=configs.RHYME_OUTPUT_KEY,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
@@ -63,6 +77,9 @@ tone_agent = LlmAgent(
     name = configs.TONE_CLASSIFIER_AGENT_NAME,
     description = configs.TONE_CLASSIFIER_AGENT_DESCRIPTION,
     instruction = prompt.TONE_INSTR,
+    input_schema=ToneSchemaInput, # Define the input schema Format
+    output_schema=ToneSchemaOutput, # Define the output schema Format
+    output_key=configs.TONE_OUTPUT_KEY,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")

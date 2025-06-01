@@ -3,7 +3,7 @@ from google.adk.agents.sequential_agent import SequentialAgent
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 
-from avp import root_agent
+from avp import root_agent, spa_agent
 
 from google.genai import types
 import os 
@@ -15,6 +15,7 @@ dotenv.load_dotenv()
 APP_NAME = os.getenv("APP_NAME", "PoemGenerator")
 USER_ID = os.getenv("USER_ID", "user_developer")
 SESSION_ID = os.getenv("SESSION_ID", "pipeline_session_1")
+SESSION_ID_SCHEMA_AGENT = os.getenv("SESSION_ID_SCHEMA_AGENT", "schema_agent_session_1")
 
 
 def create_agent(
@@ -26,6 +27,11 @@ def create_agent(
         app_name = APP_NAME, 
         user_id = USER_ID,
         session_id = SESSION_ID
+    )
+    session_service.create_session(
+        app_name = APP_NAME, 
+        user_id = USER_ID,
+        session_id = SESSION_ID_SCHEMA_AGENT
     )
 
     # main_agent = SequentialAgent(
