@@ -24,7 +24,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.sessions.state import State
 from google.adk.tools import ToolContext
 
-from avp.avp.configs import (
+from ..configs import (
     constant,
     configs
 )

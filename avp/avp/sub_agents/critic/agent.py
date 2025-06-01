@@ -20,7 +20,8 @@ from google.adk.models import LlmResponse
 
 
 from . import prompt
-from avp.avp.configs import configs
+# from avp.avp.configs import configs
+from ...configs import configs
 
 post_processing_agent = LlmAgent(
     model = configs.BASE_MODEL_NAME,

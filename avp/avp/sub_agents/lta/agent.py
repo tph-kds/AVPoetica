@@ -20,7 +20,8 @@ from google.adk.agents.callback_context import CallbackContext
 
 
 from . import prompt
-from avp.avp.configs import configs
+# from avp.avp.configs import configs
+from ...configs import configs
 
 
 semantic_consistency_agent = LlmAgent(
