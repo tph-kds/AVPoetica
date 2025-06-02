@@ -23,6 +23,8 @@ from . import prompt
 # from avp.avp.configs import configs
 from ...configs import configs
 from .schemas import (
+    InputPreprocessorInput,
+    InputPreprocessorOutput,
     MetreSchemaInput,
     MetreSchemaOutput,
     RhymeSchemaInput,
@@ -30,6 +32,7 @@ from .schemas import (
     ToneSchemaInput,
     ToneSchemaOutput
 )
+from  .callbacks import *
 
 
 
@@ -42,10 +45,12 @@ metre_agent = LlmAgent(
     input_schema=MetreSchemaInput, # Define the input schema Format
     output_schema=MetreSchemaOutput, # Define the output schema Format
     output_key=configs.METRE_OUTPUT_KEY, # Store the metre output (JSON response) in this key
+    before_agent_callback=check_if_agent_should_run,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
     # ),
+    after_agent_callback=check_if_agent_should_run_after,
     # after_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
@@ -61,10 +66,12 @@ rhyme_agent = LlmAgent(
     input_schema=RhymeSchemaInput, # Define the input schema Format
     output_schema=RhymeSchemaOutput, # Define the output schema Format
     output_key=configs.RHYME_OUTPUT_KEY,
+    before_agent_callback=check_if_agent_should_run,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
     # ),
+    after_agent_callback=check_if_agent_should_run_after,
     # after_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
@@ -80,10 +87,33 @@ tone_agent = LlmAgent(
     input_schema=ToneSchemaInput, # Define the input schema Format
     output_schema=ToneSchemaOutput, # Define the output schema Format
     output_key=configs.TONE_OUTPUT_KEY,
+    before_agent_callback=check_if_agent_should_run,
     # before_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_before_callback",
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
     # ),
+    after_agent_callback=check_if_agent_should_run_after,
+    # after_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_after_callback",
+    #     event_actions=lambda context: context.set("result", "SPA Agent Result")
+    # )
+
+)
+
+preprocessor_agent = LlmAgent(
+    model = configs.BASE_MODEL_NAME,
+    name = configs.INPUT_PREPROCESSOR_AGENT_NAME,
+    description = configs.INPUT_PREPROCESSOR_AGENT_DESCRIPTION,
+    instruction = prompt.INPUT_PREPROCESSOR_INSTR,
+    input_schema=InputPreprocessorInput, # Define the input schema Format
+    output_schema=InputPreprocessorOutput, # Define the output schema Format
+    output_key=configs.INPUT_PREPROCESSOR_OUTPUT_KEY,
+    before_agent_callback=check_if_agent_should_run,
+    # before_agent_callback=CallbackContext(
+    #     invocation_context="spa_agent_before_callback",
+    #     event_actions=lambda context: context.set("task", "SPA Agent Task")
+    # ),
+    after_agent_callback=check_if_agent_should_run_after,
     # after_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
@@ -95,6 +125,7 @@ spa_agent = SequentialAgent(
     name = configs.SAP_AGENT_NAME,
     description = configs.SAP_AGENT_DESCRIPTION,
     sub_agents=[
+        preprocessor_agent,
         metre_agent, 
         rhyme_agent, 
         tone_agent

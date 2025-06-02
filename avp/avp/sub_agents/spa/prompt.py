@@ -324,9 +324,10 @@ Given raw text input purporting to be a Vietnamese poem, your task is to perform
 * **Stanza Detection:** If possible based on consistent empty lines or other explicit markers, group lines into stanzas. If stanza detection is complex, this might be deferred to a more specialized structural analyzer, but basic grouping can be done here.
 * **Preserve Original Formatting Cues:** Note any significant original formatting (e.g., unusual indentation patterns) that might be poetically intentional, even if it's not fully parsed here.
 
+## After returning successfully, you would compulsorily run the next agent with a name: `metre_correction_agent`
 # Input for this Task
 
-* `raw_poem_text`: A string containing the raw input text.
+* `poem_input`: A string containing the raw input text.
 * `source_metadata`: (Optional) Information about the source of the text, which might give clues about potential encoding issues or artifacts.
 
 # Output Format
@@ -336,29 +337,10 @@ Your output should be a structured representation of the cleaned poem, ideally i
 ```json
 {
   "status": "success/failure/warning", // e.g., "success", "warning_unusual_characters_found"
-  "original_text_preview": "[First 100 chars of raw_poem_text]",
-  "cleaned_poem_lines": [
+  "preprocessed_output": [
     "Dòng thơ thứ nhất đã được làm sạch.",
     "Và đây là dòng thơ thứ hai.",
     // ... more lines
-  ],
-  "detected_stanzas": [ // Optional, if basic stanza detection is performed
-    [
-      "Dòng thơ thứ nhất của khổ một.",
-      "Dòng thơ thứ hai của khổ một."
-    ],
-    [
-      "Dòng thơ thứ nhất của khổ hai."
-    ]
-  ],
-  "preprocessing_log": [
-    "Converted input from ISO-8859-1 to UTF-8.",
-    "Applied NFC Unicode normalization.",
-    "Removed 3 control characters.",
-    "Standardized 15 multiple whitespace instances."
-  ],
-  "warnings": [ // List of any warnings generated
-    "Line 7 contained an unidentifiable symbol: §"
   ]
 }
 """

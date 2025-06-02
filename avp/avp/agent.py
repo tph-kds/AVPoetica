@@ -46,7 +46,7 @@ root_agent = LlmAgent(
     # output_key=configs.ROOT_OUTPUT_KEY,
     sub_agents = [
         critic_agent,
-        lt_agent,
+        # lt_agent,
         spa_agent
     ],
     # before_agent_callback=_load_precreated_itinerary

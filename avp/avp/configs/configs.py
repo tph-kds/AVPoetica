@@ -76,11 +76,12 @@ SAP_AGENT_DESCRIPTION = (
     "ensuring it aligns with the desired poetic form and style."
 )
 # ------
-# INPUT_PREPROCESSOR_AGENT_NAME = "input_preprocessor_agent"
-# INPUT_PREPROCESSOR_AGENT_DESCRIPTION = (
-#     "responsible for cleaning, normalizing, and parsing the input poem text, "
-#     "ensuring it is ready for further analysis, adjustments, creation and refinement."
-# )
+INPUT_PREPROCESSOR_AGENT_NAME = "input_preprocessor_agent"
+INPUT_PREPROCESSOR_AGENT_DESCRIPTION = (
+    "responsible for cleaning, normalizing, and parsing the input poem text, "
+    "ensuring it is ready for further analysis, adjustments, creation and refinement."
+)
+INPUT_PREPROCESSOR_OUTPUT_KEY = "preprocessed_output"
 # ------
 TONE_CLASSIFIER_AGENT_NAME = "tone_classifier_agent"
 TONE_CLASSIFIER_AGENT_DESCRIPTION = (

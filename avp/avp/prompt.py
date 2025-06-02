@@ -91,24 +91,12 @@ Given a user's request (which includes the Vietnamese poem text and potentially 
 
 Your primary output will be the sequence of operations and dispatches made. For logging and debugging, maintain a clear record of:
 * Timestamp for each major step.
-* Agent invoked.
-* Data payload sent to the agent.
-* Summary of data/response received from the agent.
-* Decision made for the next step.
-* The final packaged output for the user.
+* The output received from each agent.
 
 Example Log Entry:
 ```json
 {
   "timestamp": "2025-05-24T19:50:00Z",
-  "event": "Dispatch",
-  "agent_invoked": "metre_correction_agent",
-  "data_sent": {
-    "poem_segment": "...",
-    "current_form": "Lục Bát"
-  },
-  "response_summary": "Identified 2 metrical errors in line 3 and 5. Suggested corrections provided.",
-  "next_action": "Aggregate feedback and prepare for next round."
   "final_output": "Nắng vàng rực rỡ, hoa nở khắp nơi, ...",
 }
 ```
