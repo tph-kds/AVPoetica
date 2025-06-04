@@ -122,8 +122,11 @@ preprocessor_agent = LlmAgent(
 )
 
 spa_agent = SequentialAgent(
+    # model = configs.BASE_MODEL_NAME,
+    # instruction = prompt.SPA_INSTR,
     name = configs.SAP_AGENT_NAME,
     description = configs.SAP_AGENT_DESCRIPTION,
+    # output_key=configs.SPA_OUTPUT_KEY,
     sub_agents=[
         preprocessor_agent,
         metre_agent, 

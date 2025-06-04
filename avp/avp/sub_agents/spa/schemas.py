@@ -1,4 +1,7 @@
 from pydantic import BaseModel, Field
+from typing import Optional, List, Dict 
+
+
 
 # METRE CORRECTION AGENT SCHEMA
 class MetreSchemaInput(BaseModel):
@@ -8,7 +11,7 @@ class MetreSchemaInput(BaseModel):
     )
 
 class MetreSchemaOutput(BaseModel):
-    poem_identifier: str = Field(
+    poem_identifier: List[str] = Field(
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
@@ -20,10 +23,19 @@ class MetreSchemaOutput(BaseModel):
         description="The number of lines in the poem",
         # examples=8
     )
-    metrical_findings: list = Field(
-        description="A list of metrical findings for each line",
-        # examples=["[metrical findings]"]
+    # metrical_findings: list = Field(
+    #     description="A list of metrical findings for each line",
+    #     # examples=["[metrical findings]"]
+    # )
+
+    metre_issues: List[str] = Field(
+        description="A list of metrical issues for each line",
     )
+    metre_output: List[str] = Field(
+        description="A list of improved poem lines with metrical corrections",
+    )
+
+
 
 
 

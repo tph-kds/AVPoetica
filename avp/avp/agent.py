@@ -16,7 +16,7 @@
 """Demonstration of AVP Workflow using Agent Development Kit"""
 
 
-from google.adk.agents import Agent, LlmAgent
+from google.adk.agents import Agent, LlmAgent, SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 
@@ -38,16 +38,16 @@ from .sub_agents import (
 test_agent = spa_agent
 
 
-root_agent = LlmAgent(
-    model = configs.BASE_MODEL_NAME,
+root_agent = SequentialAgent(
+    # model = configs.BASE_MODEL_NAME,
     name = configs.ROOT_AGENT_NAME,
     description = configs.ROOT_AGENT_DESCRIPTION,
-    instruction = ROOT_AGENT_INSTR, 
+    # instruction = ROOT_AGENT_INSTR, 
     # output_key=configs.ROOT_OUTPUT_KEY,
     sub_agents = [
-        critic_agent,
+        spa_agent,
+        # critic_agent,
         # lt_agent,
-        spa_agent
     ],
     # before_agent_callback=_load_precreated_itinerary
     #     before_agent_callback=CallbackContext(
@@ -76,3 +76,5 @@ root_agent = LlmAgent(
 
 
 #  This is a original poem input:  cởi trời xanh cởi đất nâu\n  gió mây hờn dỗi bạc nâu nhớ nhung\n  bạc đầu tóc trắng da nhung\n  cõi tình thế giới ai nhung lưng sầu\n  nhớ quê hương nhớ nhuộm sầu\n  tóc thề vương vấn đôi sầu vai tròn\n  đêm buồn ngắm ánh trăng tròn\n  ngẩn ngơ ôm bóng mỏi tròn năm canh.  This is a type of poem: LỤC BÁT. Let's improve my poem input above about both how to use smooth sentence and suitable both in rhyme and in the setting of even or odd tones in the sentence.
+#  This is a original poem input:  cởi trời xanh cởi đất \n  gió mấy hờn dỗi bạc nâu nhớ nhùng\n  bạc đầu tóc trắng da nhung\n  cõi lửa thế giới ai nhung lưng sầu\n  nhớ quê hương thơ nhuộm sầu\n  tóc thể vương vương đôi sánh vai tròn\n  đêm buồn ngắm ánh trăng tròn\n  ngẩn ngơ ôm bóng mỏi tròn năm canh.  This is a type of poem: LỤC BÁT. Let's improve my poem input above about both how to use smooth sentence and suitable both in rhyme and in the setting of even or odd tones in the sentence.    
+#                                                        |           |                        |                                         |                                                |                    |         |        |                   

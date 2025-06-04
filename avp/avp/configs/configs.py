@@ -75,6 +75,7 @@ SAP_AGENT_DESCRIPTION = (
     "and providing suggestions for improvement, "
     "ensuring it aligns with the desired poetic form and style."
 )
+SPA_OUTPUT_KEY = "spa_output"
 # ------
 INPUT_PREPROCESSOR_AGENT_NAME = "input_preprocessor_agent"
 INPUT_PREPROCESSOR_AGENT_DESCRIPTION = (
