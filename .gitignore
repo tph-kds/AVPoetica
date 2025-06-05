@@ -179,4 +179,5 @@ avp_env/*
 # Local files
 note.md
 **/prompt_test.py 
+**/assets/*
 

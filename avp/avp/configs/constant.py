@@ -14,4 +14,9 @@
 
 """Constants used as keys into ADK's session state."""
 
+disallow_transfer_to_parent = True
+disallow_transfer_to_peers = True
+
+SPA_MAX_ITERATIONS = 4
+
 

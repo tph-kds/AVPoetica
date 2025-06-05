@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict 
+from typing import Optional, List, Dict, Union
 
 
 
@@ -9,6 +9,13 @@ class MetreSchemaInput(BaseModel):
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
+    ryhme_input: Optional[List[str]] = Field(
+        description=" All values output from the rhyme refinement agent",
+    )
+    tone_input: Optional[List[str]] = Field(
+        description=" All values output from the tone classification agent",
+    )
+
 
 class MetreSchemaOutput(BaseModel):
     poem_identifier: List[str] = Field(
@@ -17,16 +24,12 @@ class MetreSchemaOutput(BaseModel):
     )
     poetic_form: str = Field(
         description="The poetic form of the poem",
-        # examples="Lực Bát"
+        # examples="Lục Bát"
     )
     line_numbers: int = Field(
         description="The number of lines in the poem",
         # examples=8
     )
-    # metrical_findings: list = Field(
-    #     description="A list of metrical findings for each line",
-    #     # examples=["[metrical findings]"]
-    # )
 
     metre_issues: List[str] = Field(
         description="A list of metrical issues for each line",
@@ -46,16 +49,23 @@ class RhymeSchemaInput(BaseModel):
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
-    metre_input: MetreSchemaOutput = Field(
+    metre_input: Optional[List[str]] = Field(
         description=" All values output from the metre correction agent",
     )
+    tone_input: Optional[List[str]] = Field(
+        description=" All values output from the tone classification agent",
+    )
+
 
 class RhymeSchemaOutput(BaseModel):
     poem_identifier: str = Field(
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
-    rhyme_output: list = Field(
+    rhyme_issues: List[str] = Field(
+        description="A list of rhyme issues which define the rhyming words in the poem",
+    )
+    rhyme_output: List[str] = Field(
         description="A list of rhyme issues which define the rhyming words in the poem",
         # examples=["[rhyme issues]"]
     )
@@ -67,10 +77,10 @@ class ToneSchemaInput(BaseModel):
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
-    metre_input: MetreSchemaOutput = Field(
+    metre_input: Optional[List[str]] = Field(
         description=" All values output from the metre correction agent",
     )
-    rhyme_input: RhymeSchemaOutput = Field(
+    rhyme_input: Optional[List[str]] = Field(
         description=" All values output from the rhyme refinement agent",
     )
 
@@ -79,15 +89,15 @@ class ToneSchemaOutput(BaseModel):
         description="A string containing the Vietnamese poem lines to be analyzed",
         # examples=["[poem lines]"]
     )
-    metre_output: list = Field(
+    metre_output: List[str] = Field(
         description="A list of metre issues which define the rhyming words in the poem",
         # examples=["[metre issues]"]
     )
-    rhyme_output: list = Field(
+    rhyme_output: List[str] = Field(
         description="A list of rhyme issues which define the rhyming words in the poem",
         # examples=["[rhyme issues]"]
     )
-    tone_output: list = Field(
+    tone_output: List[str] = Field(
         description="A list of tone issues which define the rhyming words in the poem",
         # examples=["[tone issues]"]
     )
@@ -101,8 +111,50 @@ class InputPreprocessorInput(BaseModel):
     )
 
 class InputPreprocessorOutput(BaseModel):
+    # poem_output: str = Field(
+    #     description="The normalized Vietnamese poem lines",
+    #     # examples=["[poem lines]"]
+    # )
+    preprocessed_output: List[str] = Field(
+        description="A list of tone issues which define the rhyming words in the poem",
+        # examples=["[tone issues]"]
+    )
+    
+    poetic_form: str = Field(   
+        description="The poetic form of the poem",
+        # examples="Lục Bát"
+    )
+    count_syllables: List[str] = Field(
+        description="A list of tone issues which define the rhyming words in the poem",
+        # examples=["[tone issues]"]
+    )
+    tone_pattern: List[str] = Field(
+        description="A list of tone issues which define the rhyming words in the poem",
+        # examples=["[tone issues]"]
+    )
+
+
+class ScoreCheckerSchemaInput(BaseModel):
+    poem_input: str = Field(
+        description="A string containing the Vietnamese poem lines to be analyzed",
+        # examples=["[poem lines]"]
+    )
+    poetic_form: str = Field(
+        description="The poetic form of the poem",
+        # examples="Lục Bát"
+    )
+
+class ScoreCheckerSchemaOutput(BaseModel):
     poem_output: str = Field(
         description="The normalized Vietnamese poem lines",
+        # examples=["[poem lines]"]
+    )
+    status : str = Field(
+        description="The status of the poetic score tool",
+        # examples=["[poem lines]"]
+    )
+    score: float = Field(
+        description="The output of the poetic score tool",
         # examples=["[poem lines]"]
     )
 

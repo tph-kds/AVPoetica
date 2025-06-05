@@ -118,3 +118,15 @@ async def main():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
+    # Execute the main async function
+    # try:
+    #     asyncio.run(main())
+    # except RuntimeError as e:
+    #     # Handle specific error when running asyncio.run in an already running loop (like Jupyter/Colab)
+    #     if "cannot be called from a running event loop" in str(e):
+    #         print("\nRunning in an existing event loop (like Colab/Jupyter).")
+    #         print("Please run `await main()` in a notebook cell instead.")
+    #         # If in an interactive environment like a notebook, you might need to run:
+    #         # await main()
+    #     else:
+    #         raise e  # Re-raise other runtime errors

@@ -14,14 +14,27 @@
 
 """ Defines the SPA Critic Agent in the AVP ai agent. """
 
-from google.adk.agents import Agent, LlmAgent, SequentialAgent
+from google.adk.agents import (
+    Agent,
+    BaseAgent,
+    LlmAgent,
+    SequentialAgent,
+    LoopAgent
+)
+from google.adk.events import Event, EventActions
+from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 
+from typing import Optional, Dict, AsyncGenerator
 
 from . import prompt
 # from avp.avp.configs import configs
-from ...configs import configs
+from ...configs import (
+    configs,
+    constant
+)
+from ...tools import poetic_score
 from .schemas import (
     InputPreprocessorInput,
     InputPreprocessorOutput,
@@ -30,7 +43,9 @@ from .schemas import (
     RhymeSchemaInput,
     RhymeSchemaOutput,
     ToneSchemaInput,
-    ToneSchemaOutput
+    ToneSchemaOutput,
+    ScoreCheckerSchemaInput,
+    ScoreCheckerSchemaOutput
 )
 from  .callbacks import *
 
@@ -51,6 +66,8 @@ metre_agent = LlmAgent(
     #     event_actions=lambda context: context.set("task", "SPA Agent Task")
     # ),
     after_agent_callback=check_if_agent_should_run_after,
+    disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
+    disallow_transfer_to_peers=constant.disallow_transfer_to_peers
     # after_agent_callback=CallbackContext(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
@@ -76,6 +93,8 @@ rhyme_agent = LlmAgent(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
     # )
+    disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
+    disallow_transfer_to_peers=constant.disallow_transfer_to_peers
 
 )
 
@@ -97,6 +116,8 @@ tone_agent = LlmAgent(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
     # )
+    disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
+    disallow_transfer_to_peers=constant.disallow_transfer_to_peers
 
 )
 
@@ -118,10 +139,35 @@ preprocessor_agent = LlmAgent(
     #     invocation_context="spa_agent_after_callback",
     #     event_actions=lambda context: context.set("result", "SPA Agent Result")
     # )
+    disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
+    disallow_transfer_to_peers=constant.disallow_transfer_to_peers
 
 )
 
-spa_agent = SequentialAgent(
+# class CheckCondition(LlmAgent): # Custom agent to check state
+#     async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
+#         status = ctx.session.state.get("status", "pending")
+#         score = ctx.session.state.get("score", 0.0)
+#         is_done = (status == "completed" and score >= 0.95)
+            
+#         yield Event(author=self.name, actions=EventActions(escalate=is_done)) # Escalate if done
+
+score_checker_agent = LlmAgent(
+    name = configs.SCORE_CHECKER_AGENT_NAME,
+    description = configs.SCORE_CHECKER_AGENT_DESCRIPTION,
+    model = configs.BASE_MODEL_NAME,
+    instruction = prompt.SCORE_CHECKER_INSTR,
+    input_schema=ScoreCheckerSchemaInput, # Define the input schema Format
+    # output_schema=ScoreCheckerSchemaOutput, # Define the output schema Format
+    output_key=configs.SCORE_CHECKER_OUTPUT_KEY,
+    before_agent_callback=check_if_agent_should_run,
+    after_agent_callback=limit_request_rate,
+    disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
+    disallow_transfer_to_peers=constant.disallow_transfer_to_peers,
+    tools=[poetic_score]
+)
+
+spa_agent = LoopAgent(
     # model = configs.BASE_MODEL_NAME,
     # instruction = prompt.SPA_INSTR,
     name = configs.SAP_AGENT_NAME,
@@ -131,7 +177,10 @@ spa_agent = SequentialAgent(
         preprocessor_agent,
         metre_agent, 
         rhyme_agent, 
-        tone_agent
-    ]
+        tone_agent,
+        score_checker_agent
+    ],
+    max_iterations=constant.SPA_MAX_ITERATIONS,
 
 )
+

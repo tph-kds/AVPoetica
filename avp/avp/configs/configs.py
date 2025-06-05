@@ -107,7 +107,17 @@ RHYME_REFINEMENT_AGENT_DESCRIPTION = (
     "and enhancing the musicality of the poem through effective rhyme."
 )
 RHYME_OUTPUT_KEY = "rhyme_output"
+
 # ------
+
+SCORE_CHECKER_AGENT_NAME = "score_checker_agent"
+SCORE_CHECKER_AGENT_DESCRIPTION = (
+    "check, calculate and evaluate the poem's output from other agents, "
+    "ensuring it aligns with the desired poetic form, "
+    "and enhancing the musicality of the poem through the defined threshold."
+)
+SCORE_CHECKER_OUTPUT_KEY = "score_checker_output"
+
 
 
 # ------ Sub-agent configurations ------
