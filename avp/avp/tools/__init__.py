@@ -4,4 +4,5 @@ from .memory import (
 
 from .poetic import (
     poetic_score,
+    _score
 )

@@ -1,34 +1,10 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-""" The 'poetic' tool for several agents to affect session states."""
-
-import os 
-from typing import Dict, List, Any 
-from google.adk.tools import ToolContext
-from ..configs import (
-    PoeticScoreToolInput,
-    PoeticScoreToolOutput
-)
-import requests
-
 import re
 import ast
 import json
 from math import ceil, floor
 from collections import defaultdict
 from itertools import chain
+from typing import Optional
 
 
 try:
@@ -36,7 +12,7 @@ try:
 except ImportError:
     import importlib_resources as resources
 
-sources ="avp/avp/tools/assets/"
+sources ="assets/"
 
 def load_data(filename: str):
 
@@ -112,7 +88,7 @@ def dictionary(dictionary_path: str):
     return result_dict
 
 
-class RhymesTonesMetrics:
+class PoeticRules:
   def __init__(
       self,
       vowels_dict_path,
@@ -138,6 +114,17 @@ class RhymesTonesMetrics:
     self.tone_dict = tone(tone_dict_path)
     self.dictionary_vi = dictionary(dictionary_path)
     self.special_tone_dict = special_tone(special_tone_dict_path)
+
+
+    self.masked_words = [
+        #  {
+        #     "line": 1,
+        #     "position": 8,
+        #     "word": "mùa"
+        #  },
+      ]
+    self.idx_masked_words = set()
+    self.token_masked_words = "MASKED_WORD"
 
   def is_stanza(self, sentences: str):
       """
@@ -202,12 +189,31 @@ class RhymesTonesMetrics:
       return False
 
 
+  def add_masked_word(
+        self, 
+        word: str,
+        line: int,
+        position: int
+  ):
+      self.masked_words.append({
+          "line": line,
+          "position": position,
+          "word": word
+      })
+
+      self.idx_masked_words.add(f"{line}_{position}") # ex: 1_8 for line 1, position 8
+      
+
+      print(f"Masked word: {word} at line {line}, position {position}")
+
+
 
   def check_rhyme_pair(
       self,
       prev_sentence: str,
       cur_sentence: str,
-      check_ryhme_label,
+      idx: int,
+      idx_next: int,
       tag: str,
       prev_end_words_rhyme="",
   ):
@@ -218,35 +224,15 @@ class RhymesTonesMetrics:
 
           return: is the same rhyme or not
         """
-      rhyme_errors = 0
-      length_errors = 0
-
-      prev_length = len(prev_sentence.split(" "))
-      cur_length = len(cur_sentence.split(" "))
+      error_word = ""
 
       tag_end_word = 0 # index of ending word to check ryhme
 
       if tag == "68":
         tag_end_word = 5
 
-        if prev_length != 6:
-            prev_sentence = "(L)" + prev_sentence
-            length_errors = length_errors + 1
-
-        if cur_length != 8:
-            cur_sentence = "(L)" + cur_sentence
-            length_errors = length_errors + 1
-
       elif tag == "78":
         tag_end_word = 6
-
-        if prev_length != 7:
-            prev_sentence = "(L)" + prev_sentence
-            length_errors = length_errors + 1
-
-        if cur_length != 7:
-            cur_sentence = "(L)" + cur_sentence
-            length_errors = length_errors + 1
 
       prev_words = prev_sentence.split(" ")
       cur_words = cur_sentence.split(" ")
@@ -258,12 +244,12 @@ class RhymesTonesMetrics:
       if prev_end_words_rhyme == "":
           try:
               if not self.compare(prev_words_in_sentences, cur_words_in_sentences):
-
-                  cur_words[tag_end_word] = cur_words[tag_end_word] + "(E_V)"
-                  check_ryhme_label = "(E_V)"
-                  rhyme_errors = rhyme_errors + 1
-              else:
-                  check_ryhme_label = "(R)"
+                  error_word = cur_words[tag_end_word]
+                  self.add_masked_word(
+                      word=error_word,
+                      line=idx_next + 1,
+                      position=tag_end_word + 1
+                  )
 
           except Exception as e:
               print(f"{e} + {cur_sentence}")
@@ -272,12 +258,12 @@ class RhymesTonesMetrics:
       if prev_end_words_rhyme != "":
           try:
             if not self.compare(prev_words_in_sentences, prev_end_words_rhyme):
-
-                prev_words[tag_end_word] = prev_words[tag_end_word] + "(E_V)"
-                check_ryhme_label = "(E_V)"
-                rhyme_errors = rhyme_errors + 1
-            else:
-                check_ryhme_label = "(R)"
+                error_word = prev_words[tag_end_word]
+                self.add_masked_word(
+                    word=error_word,
+                    line=idx + 1,
+                    position=tag_end_word + 1
+                )
 
           except Exception as e:
               print(f"{e} + {cur_sentence}")
@@ -285,13 +271,12 @@ class RhymesTonesMetrics:
 
           try:
             if not self.compare(prev_end_words_rhyme, cur_words_in_sentences):
-
-                cur_words[tag_end_word] = cur_words[tag_end_word] + "(E_V)"
-                check_ryhme_label = "(E_V)"
-                rhyme_errors = rhyme_errors + 1
-            else:
-                check_ryhme_label = "(R)"
-
+                error_word = cur_words[tag_end_word]
+                self.add_masked_word(
+                    word=error_word,
+                    line=idx_next + 1,
+                    position=tag_end_word + 1
+                )
 
           except Exception as e:
               print(f"{e} + {cur_sentence}")
@@ -300,19 +285,13 @@ class RhymesTonesMetrics:
       prev_sentence = " ".join(prev_words)
       cur_sentence = " ".join(cur_words)
 
-
-      return prev_sentence, cur_sentence, cur_words[-1], rhyme_errors, length_errors, check_ryhme_label
+      return prev_sentence, cur_sentence, cur_words[-1]
+  
 
   def check_ryhme_stanze_type_78(
       self,
       sentences: str,
-      first_words: str,
-      prev_end_words_rhyme: str,
-      total_rhyme_errors: int,
-      total_length_errors: int,
-      check_ryhme_label,
-      check_ryhme_labels,
-      tag: str
+      most_common_rhyme: Optional[str] = None
   ):
       """
         Check rhyme by stanza with THAT NGON BAT CU type
@@ -333,44 +312,38 @@ class RhymesTonesMetrics:
           total_length_errors: total length errors
           check_ryhme_labels: list of check rhyme labels
       """
+      length_sentences = len(sentences)
+      # Let's check The first sentence 
+      pos_end_word = 6
+      print(f"self.rhymes_dict[most_common_rhyme[0]]: {self.rhymes_dict[most_common_rhyme[0]]}")
+      first_word = sentences[0].split(" ")[pos_end_word]
+      rhyme_first_word = self.split_word(first_word)
+      if rhyme_first_word not in self.rhymes_dict[most_common_rhyme[0]]:
+          self.add_masked_word(
+              word=first_word,
+              line=1,
+              position=pos_end_word + 1
+      )  
 
-      ryhme_sentence_lines = [0]
-      out_ryhme_sentence_lines = []
+      for i in range(1, length_sentences, 2):
+         end_word = sentences[i].split(" ")[pos_end_word]
+         rhyme_end_word = self.split_word(end_word)
+         print(f"end_word: {end_word}")
+         print(f"rhyme_end_word: {rhyme_end_word}")
+         if rhyme_end_word not in self.rhymes_dict[most_common_rhyme[0]]:
+            self.add_masked_word(
+                word=end_word,
+                line=i + 1,
+                position=pos_end_word + 1
+            )
 
-      for i in range(int(len(sentences)/2)):
-        ryhme_sentence_lines = ryhme_sentence_lines + [int(2*i+1)]
-        out_ryhme_sentence_lines = out_ryhme_sentence_lines + [int(2*i)]
-      out_ryhme_sentence_lines = out_ryhme_sentence_lines[1:]
-
-      # print(out_ryhme_sentence_lines, ryhme_sentence_lines)
-
-
-      if len(first_words) == 7:
-          prev_end_words_rhyme = self.split_word(first_words[6])
-
-      for i in range(0, len(ryhme_sentence_lines) - 1):
-          idx = ryhme_sentence_lines[i]
-          idx_next = ryhme_sentence_lines[i+1]
-
-          sentences[idx], sentences[idx_next], prev_end_words_rhyme, rhyme_errors, length_errors, check_ryhme_label =\
-              self.check_rhyme_pair(sentences[idx], sentences[idx_next], check_ryhme_label, tag, prev_end_words_rhyme)
-
-          total_rhyme_errors = total_rhyme_errors + rhyme_errors
-          total_length_errors = total_length_errors + length_errors
-
-          check_ryhme_labels[idx_next] = check_ryhme_label
-
-      return "\n".join(sentences), total_rhyme_errors, total_length_errors, check_ryhme_labels
+      return "\n".join(sentences)
 
   def check_rhyme_stanza_type_68(
       self,
       sentences: str,
       first_words: str,
       prev_end_words_rhyme: str,
-      total_rhyme_errors: int,
-      total_length_errors: int,
-      check_ryhme_label,
-      check_ryhme_labels,
       start_index: int,
       tag: str
   ):
@@ -395,22 +368,17 @@ class RhymesTonesMetrics:
           check_ryhme_labels: list of check rhyme labels
 
       """
-
       if len(first_words) == 8:
           prev_end_words_rhyme = self.split_word(first_words[7])
           start_index = 1
 
       for i in range(start_index, len(sentences), 2):
-          if i+1 == len(sentences):
-              sentences.append("Missing ending sentence")
-          sentences[i], sentences[i+1], prev_end_words_rhyme, rhyme_errors, length_errors, check_ryhme_label =\
-              self.check_rhyme_pair(sentences[i], sentences[i + 1], check_ryhme_label, tag, prev_end_words_rhyme)
-          total_rhyme_errors = total_rhyme_errors + rhyme_errors
-          total_length_errors = total_length_errors + length_errors
+        if i+1 == len(sentences):
+            sentences.append("Missing ending sentence")
+        sentences[i], sentences[i+1], prev_end_words_rhyme =\
+            self.check_rhyme_pair(sentences[i], sentences[i + 1], i, i + 1, tag, prev_end_words_rhyme)
 
-          check_ryhme_labels[i+1] = check_ryhme_label
-
-      return "\n".join(sentences), total_rhyme_errors, total_length_errors, check_ryhme_labels
+      return "\n".join(sentences)
 
   def check_rhyme_stanza(
       self,
@@ -434,34 +402,43 @@ class RhymesTonesMetrics:
       first_words = sentences[0].split(" ")
       start_index = 0
       prev_end_words_rhyme = ""
-      total_rhyme_errors = 0
-      total_length_errors = 0
-      check_ryhme_labels = [""]*len(sentences)
-      # Init original value
-      check_ryhme_labels[0] = "(R)"
-      check_ryhme_label = ""
 
       if tag == "78":
+        # Check the rhyme of the last word of the stanza
+        pos_last_word = len(first_words) - 1
+        rhyme_list = []
+        rhyme_dict = {}
+        rhyme_list.append(self.split_word(first_words[pos_last_word]))
+        for i in range(1, len(sentences), 2):
+           last_word = self.split_word(sentences[i].split(" ")[pos_last_word])
+           last_word = self.split_special_char(last_word)
+           rhyme_list.append(last_word)
+        #    print(f"self.rhymes_dict[last_word]: {self.rhymes_dict[last_word]}")
+           rhyme_dict[last_word] = self.rhymes_dict[last_word]
+        frequency_rhyme = defaultdict(int)
 
-        res, total_rhyme_errors, total_length_errors, check_ryhme_labels = self.check_ryhme_stanze_type_78(
+        for rhyme in rhyme_list:
+            matched = False 
+            for key, value in rhyme_dict.items():
+                if rhyme in value:
+                    matched = True
+                    frequency_rhyme[key] = frequency_rhyme.get(key, 0) + 1
+                    break
+            if not matched:
+                frequency_rhyme[rhyme] = frequency_rhyme.get(rhyme, 0) + 1
+
+        max_freq = max(frequency_rhyme.values())
+        most_common_rhyme = [k for k, v in frequency_rhyme.items() if v == max_freq]
+          
+        res = self.check_ryhme_stanze_type_78(
             sentences,
-            first_words,
-            prev_end_words_rhyme,
-            total_rhyme_errors,
-            total_length_errors,
-            check_ryhme_label,
-            check_ryhme_labels,
-            tag
+            most_common_rhyme
         )
       elif tag == "68":
-        res, total_rhyme_errors, total_length_errors, check_ryhme_labels = self.check_rhyme_stanza_type_68(
+        res = self.check_rhyme_stanza_type_68(
             sentences,
             first_words,
             prev_end_words_rhyme,
-            total_rhyme_errors,
-            total_length_errors,
-            check_ryhme_label,
-            check_ryhme_labels,
             start_index,
             tag
         )
@@ -469,7 +446,7 @@ class RhymesTonesMetrics:
         pass
 
 
-      return res, total_rhyme_errors, total_length_errors, check_ryhme_labels
+      return res
 
 
   def get_tone(self, word: str):
@@ -554,10 +531,14 @@ class RhymesTonesMetrics:
         if length != 6 and length != 8:
             return "(L)"+sentence, 0, " ".join(sentence_correct)
         cur_tone_dict = self.tone_dict[length]
-      total_wrong_tone = 0
+
       for i in cur_tone_dict:
           if self.get_tone(words[i]) != cur_tone_dict[i]:
-              total_wrong_tone = total_wrong_tone + 1
+              self.add_masked_word(
+                 word = words[i], 
+                 line = row_sentence + 1, 
+                 position = i + 1
+              )
               words[i] = words[i] + "(E_T)"
           else:
             if self.get_tone(words[i]) == 'uneven':
@@ -565,7 +546,7 @@ class RhymesTonesMetrics:
             elif self.get_tone(words[i]) == 'even':
               sentence_correct[i] = sentence_correct[i] + "(B)"
 
-      return " ".join(words), total_wrong_tone, " ".join(sentence_correct)
+      return " ".join(words), " ".join(sentence_correct)
 
 
   def check_tone_stanza(
@@ -586,7 +567,6 @@ class RhymesTonesMetrics:
         """
       sentences = stanza.split("\n")
       sentences_correct = []
-      total_wrong = 0
       ### the first Define for the tone of the first sentence is _ T _ B _ T _ _
       first_tone_default = [[0, 3, 4, 7], [1, 2, 5, 6]] ## ==> 7 ffile, 71 file
       first_sentence_words_1 = sentences[0].split(" ")[1]
@@ -597,12 +577,9 @@ class RhymesTonesMetrics:
         first_tone_default_sentence = [first_tone_default[1], first_tone_default[0]]
 
       for i in range(len(sentences)):
-          current_wrong = 0
-
-          sentences[i], current_wrong, sentence_correct = self.check_tone_sentence(sentences[i], i, first_tone_default_sentence, tag)
-          total_wrong = total_wrong + current_wrong
+          sentences[i], sentence_correct = self.check_tone_sentence(sentences[i], i, first_tone_default_sentence, tag)
           sentences_correct.append(sentence_correct)
-      return "\n".join(sentences), total_wrong, "\n".join(sentences_correct)
+      return "\n".join(sentences), "\n".join(sentences_correct)
 
 
   def preprocess_stanza(self, stanza: str):
@@ -640,25 +617,19 @@ class RhymesTonesMetrics:
         Returns:
             stanza processed
       """
+
       if not self.is_stanza(stanza):
           print(stanza + ": is not a stanza")
           return
       stanza = self.preprocess_stanza(stanza)
-      stanza, total_rhyme_errors, total_length_errors, check_ryhme_labels = self.check_rhyme_stanza(stanza, tag) # Create and record error unstructured sentences
-      stanza, total_wrong_tone, sentences_correct_format = self.check_tone_stanza(stanza, tag)
-
-      each_sentence = sentences_correct_format.split("\n")
-      mixed_format = [""]*len(each_sentence)
-      for i in range(len(each_sentence)):
-          mixed_format[i] = each_sentence[i] + check_ryhme_labels[i]
-
-      mixed_format = "\n".join(mixed_format)
-      return stanza, total_length_errors, total_rhyme_errors, total_wrong_tone, mixed_format
+      stanza = self.check_rhyme_stanza(stanza, tag) # Create and record error unstructured sentences
+    #   stanza, sentences_correct_format = self.check_tone_stanza(stanza, tag)
+      sentences_correct_format = stanza
+      return stanza, sentences_correct_format
 
   def check_spelling_vietnamese(
       self,
       stanza: str,
-      total_spelling_errors: int,
       sentences_correct_format: str,
       recommend_correct_format: dict
   ):
@@ -678,74 +649,33 @@ class RhymesTonesMetrics:
       """
 
       sentences = stanza.split("\n")
-      for sentence in sentences:
+      for line, sentence in enumerate(sentences):
           words = sentence.split(" ")
           words_out = []
-          for word in words:
+          for pos, word in enumerate(words):
             first_char = word[0].lower()
             vietnamese_chars = self.dictionary_vi[first_char]
             if self.split_special_char(word.lower()) in vietnamese_chars:
               continue
             else:
-              total_spelling_errors = total_spelling_errors + 1
+              self.add_masked_word(
+                 word = word, 
+                 line = line + 1, 
+                 position = pos + 1
+              )
               word = word + "(E_S)"
               recommend_correct_format[word] = vietnamese_chars
             words_out.append(word)
           sentences_correct_format.append(" ".join(words_out))
       # print(sentences_correct_format)
-      return total_spelling_errors, "\n".join(sentences_correct_format), recommend_correct_format
+      return "\n".join(sentences_correct_format), recommend_correct_format
 
 
-  def calculate_score_by_error(self,
-      stanza_length: int,
-      tag: str,
-      total_length_errors: int,
-      total_rhyme_errors: int,
-      total_wrong_tone: int,
-      total_spelling_errors: int,
-      total_length_words_of_stanza,
-  ):
-      """
-        A function to calculate score for the Stanza by length, rhyme and tone errors
-            Currently doesnt punish the length error
-
-        Params:
-              sentence: stanza_length,
-                        total_length_errors,
-                        total_rhyme_errors,
-                        total_wrong_tone
-              tag: tag Input - type of poem
-
-        Returns:
-
-          Score: score calculated by formula that rhyme accounts for 70% score rate and 30% left for tone
-      """
-      num_first_sentence = ceil(stanza_length/2)
-      num_second_sentence = floor(stanza_length/2)
-      total_length_rhyme_errors = 0.00001
-      total_length_tone_errors = 0.00001
-
-      if tag == "68": # Thơ Luc Bat
-          total_length_rhyme_errors = (num_first_sentence + 2*num_second_sentence-1)
-          total_length_tone_errors = (3*num_first_sentence+4*num_second_sentence)
-      elif tag =="78": # Thơ That Ngon Bat Cu
-          total_length_rhyme_errors = (num_first_sentence + num_second_sentence-3)
-          total_length_tone_errors = (3*num_first_sentence+3*num_second_sentence)
-      elif tag == "00":
-          # total_length_words_of_stanza = stanza_length
-          return 100 - 100 * (total_spelling_errors/ total_length_words_of_stanza)
-      else:
-        pass
-
-      rhyme_minus_points = 70*total_rhyme_errors/total_length_rhyme_errors
-      tone_minus_points = 30*total_wrong_tone/total_length_tone_errors
-
-      return 100 - rhyme_minus_points - tone_minus_points
-
-
-  def calculate_stanza_score(self,
-                             stanza: str,
-                             tag: str):
+  def calculate_stanza_score(
+        self,
+        stanza: str,
+        tag: str,
+        ):
       """
         A function to calculate score for the Stanza
 
@@ -756,35 +686,24 @@ class RhymesTonesMetrics:
       """
 
       stanza = self.preprocess_stanza(stanza)
-      length = len(stanza.split("\n"))
-      total_length_errors = 0
-      total_rhyme_errors = 0
-      total_wrong_tone = 0
       total_spelling_errors = 0
 
-      word_by_stanza = [ x.split(" ") for x in stanza.split("\n")]
-      # Concatenate into a single list
-      flat_list = [item for item in chain.from_iterable(word_by_stanza) if item]
-      total_length_words_of_stanza = len(flat_list)
       sentences_correct_format = []
       recommend_correct_format = {}
       try:
         if tag != "00":
-          stanza, total_length_errors, total_rhyme_errors, total_wrong_tone, sentences_correct_format = self.check_rule(stanza, tag)
+          stanza, sentences_correct_format = self.check_rule(stanza, tag)
         elif tag == "00":
-          total_spelling_errors, sentences_correct_format, recommend_correct_format = self.check_spelling_vietnamese(stanza, total_spelling_errors, sentences_correct_format, recommend_correct_format)
-
-        score = self.calculate_score_by_error(length, tag, total_length_errors, total_rhyme_errors, total_wrong_tone, total_spelling_errors, total_length_words_of_stanza)
-
+          sentences_correct_format, recommend_correct_format = self.check_spelling_vietnamese(stanza, total_spelling_errors, sentences_correct_format, recommend_correct_format)
 
       except Exception as e:
           print(e)
           score = 0
           sentences_correct_format = ""
-      return score, sentences_correct_format, recommend_correct_format
+      return sentences_correct_format, recommend_correct_format
 
 
-  def calculate_score(self,
+  def check_poem(self,
                       poem: str,
                       tag: str):
       """
@@ -799,39 +718,26 @@ class RhymesTonesMetrics:
         and 30% left for tone
 
       """
-      sum_ = 0
-      count = 0
+
       sentences_correct_format = ""
       recommend_correct_format = {}
       for i in poem.split("\n\n"):
-          count += 1
-          score, sentences_correct_format, recommend_correct_format = self.calculate_stanza_score(i, tag)
+          sentences_correct_format, recommend_correct_format = self.calculate_stanza_score(i, tag)
           print(sentences_correct_format)
           print(recommend_correct_format)
-          sum_ = sum_ + score
-      return sum_/count
+      return self.idx_masked_words, self.masked_words 
+  
 
 
-def _score(
-        poem: str,
-        luc_bat: bool = False,
-        sources: str = "avp/avp/tools/assets/"
-):
-    """
-    A function to calculate score for a poem that may have some stanzas
 
-    param sentence: poem
-
-    return: score  after checked by rule and calculated by formula that rhyme accounts for 70% score rate
-    and 30% left for tone
-    """
+if __name__ == "__main__":
     import os 
     # get the root path
     root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     root_path = os.path.dirname(os.path.dirname(root_path))
-    print(f"\n\n[ROOT_PATH]: {root_path} \n\n")
+    # print(f"\n\n[ROOT_PATH]: {root_path} \n\n")
     full_path = os.path.join(root_path, sources)
-    print(f"\n\n[SOURCES]: {sources} \n\n")
+    # print(f"\n\n[SOURCES]: {sources} \n\n")
 
     vowels_path = full_path + "start_vowels.txt"
     rhyme_path = full_path + "rhymes.txt"
@@ -839,56 +745,47 @@ def _score(
     special_tone_path = full_path + "vocab_dupple_check.txt"
     dictionary_path = full_path + "words.txt"
 
-    # even_chars, list_start_vowels, tones = vowels(vowels_path)
-    # rhymes_dict = rhyme(rhyme_path)
-    # tone_dict = tone(tone_path)
-    # special_tone_dict = special_tone(special_tone_path)
-    # dictionary_vi = dictionary(dictionary_path)
-
-    metrics = RhymesTonesMetrics(vowels_path, rhyme_path, tone_path, dictionary_path, special_tone_path)
+    check_poetic_rule = PoeticRules(
+       vowels_dict_path = vowels_path, 
+       rhyme_dict_path=rhyme_path, 
+       tone_dict_path=tone_path, 
+       dictionary_path=dictionary_path, 
+       special_tone_dict_path=special_tone_path
+    )
+    luc_bat = True
+    poem = ""
+    if luc_bat:
+        poem = "cởi trời xanh cởi đất nâu \ngió mấy hờn dỗi bạc na nhớ nhùng \nbạc đầu tóc trắng da nhé \ncõi lửa thế giới ai nhung lưng sầu \nnhớ quê hương thơ nhuộm sầu \ntóc thể vương vương đôi sánh vai tròn \nđêm buồn ngắm ánh trăng tròn \nngẩn ngơ ôm bóng mỏi tròn năm canh."
+    else:
+        poem = "Hoàng hôn tắt nắng phủ sương mờ \nbóng tối giăng đầy vạn nẻo sơi \nngọn cỏ thu sương lay khẽ khẽ \nđầu non điểm xuyết ánh lơ thơ \ncôn trùng rỉ rả nghe mà chán \ncon nhện buông tơ rối cả trơ \nlặng lẽ tìm con buồn héo hắt \nkhói sương lẩn khuất ánh lóe vàng."
     tags = "68" if luc_bat else "78"
-    score = metrics.calculate_score(poem, tag=tags)
-    return score if score > 0.0 else 0.0
+    idx_masked_words, masked_words = check_poetic_rule.check_poem(poem, tag=tags)
+
+    print(f"\n\n[IDX_MASKED_WORDS]: {idx_masked_words} \n")
+    print(f"\n\n[MASKED_WORDS]: {masked_words} \n")  
+
+    # python mtm/mtm/processes/poetic_rule.py  
+
+# =========================  LỤC BÁT
+# cởi trời xanh cởi đất nâu 
+# \ngió MẤY hờn dỗi bạc nâu nhớ nhùng  | (2_2) - TONE, 
+# \nbạc đầu tóc trắng da nhung 
+# \ncõi LỬA thế giới ai nhung lưng sầu | (4_2) - TONE, 
+# \nnhớ quê hương THƠ nhuộm sầu | (5_4) - TONE
+# \ntóc THỂ vương VƯƠNG đôi SÁNH vai tròn | (6_2) - TONE, (6_4) - TONE, (6_6) - TONE, RHYME 
+# \nđêm buồn ngắm ánh trăng tròn 
+# \nngẩn ngơ ôm bóng mỏi tròn năm canh.
+
+
+# =========================  THẤT NGÔN BÁT CÚ
+# Hoàng hôn tắt nắng phủ sương mờ 
+# bóng tối giăng đầy vạn nẻo sơi | (2_7) - RHYME
+# ngọn cỏ thu sương lay khẽ khẽ 
+# đầu non điểm xuyết ánh lơ thơ 
+# côn trùng rỉ rả nghe mà chán 
+# con nhện buông tơ rối cả trơ 
+# lặng lẽ tìm con buồn héo hắt 
+# khói sương lẩn khuất ánh LÓE VÀNG | (8_6) - TONE, (8_7) - RHYME
 
 
 
-def poetic_score(tool_context: ToolContext) -> PoeticScoreToolOutput:
-    """The 'poetic' tool for several agents to affect session states."""
-
-    response_status = "failed"
-    response_score = 0.0
-    target_score = 0.95
-
-    # tool_context = ToolContext.from_state(configs.key)
-    poem_input = tool_context.poem_input
-    poetic_form = tool_context.poetic_form
-    is_luc_bat = True if poetic_form.lower() ==  "luc bat" or poetic_form.lower() == "lục bát" else False
-    score = _score(
-        poem=poem_input,
-        luc_bat=is_luc_bat
-    )
-    print(f"\n\n[SCORE CHECKING FROM TOOL FOLDER]: {score} \n\n")
-    if score is not None:
-        tool_context.state["score"] = score
-
-    if tool_context.state["score"] is not None:
-        response_status = "pending"
-        response_score = tool_context.state["score"]
-        if response_score > target_score:
-            response_status = "completed"
-            tool_context.actions.escalate = True
-        else:
-            response_status = "pending"
-            tool_context.actions.escalate = False
-
-    return PoeticScoreToolOutput(
-        status=response_status,
-        state=tool_context.state,
-        poetic_score=response_score,
-    )
-
-
-
-#   [
-    # "Cởi trần gian, cởi hết ra \nHờn ai phai nhạt, xót xa nghẹn ngào. \nSương pha mái bạc, áo bào, \nThế gian bể khổ, lệ trào xót thương. \nNhớ chăng quê cũ dặm trường, \nTóc thề vương vấn, má hường phôi pha. \nTrăng tàn canh vắng, lệ sa, \nÂm thầm ôm bóng, xót xa cõi lòng."
-#   ]

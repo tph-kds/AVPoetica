@@ -25,6 +25,7 @@ from google.adk.events import Event, EventActions
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
+from google.adk.tools import FunctionTool
 
 from typing import Optional, Dict, AsyncGenerator
 
@@ -164,7 +165,7 @@ score_checker_agent = LlmAgent(
     after_agent_callback=limit_request_rate,
     disallow_transfer_to_parent=constant.disallow_transfer_to_parent, 
     disallow_transfer_to_peers=constant.disallow_transfer_to_peers,
-    tools=[poetic_score]
+    tools=[FunctionTool(func=poetic_score)]
 )
 
 spa_agent = LoopAgent(
@@ -176,7 +177,7 @@ spa_agent = LoopAgent(
     sub_agents=[
         preprocessor_agent,
         metre_agent, 
-        rhyme_agent, 
+        # rhyme_agent, 
         tone_agent,
         score_checker_agent
     ],
