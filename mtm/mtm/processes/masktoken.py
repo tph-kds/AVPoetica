@@ -1,8 +1,12 @@
 import os 
 import sys
 
-from ..configs import MaskErrorTokenizationConfig
-from .poetic_rule import PoeticRule
+from ..configs import (
+    MaskErrorTokenizationConfig,
+    CountSyllablePoemsConfig,
+)
+from .poetic_rule import PoeticRules
+from .count_syllables import CountSyllablePoems
 
 class MaskErrorTokenization:
     def __init__(
