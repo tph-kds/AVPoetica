@@ -57,10 +57,29 @@ class OpenRouterModelConfig(BaseModel):
         default = True
     )
 
-class MaskErrorTokenizationConfig(BaseModel):
-    pass 
+
+class PoeticRulesConfig(BaseModel):
+    vowels_dict_path: str = Field(
+        default = "vowels.txt"
+    )
+    rhyme_dict_path: str = Field(
+        default = "rhymes.txt"
+    ) 
+    tone_dict_path : str = Field(
+        default = "tone_dict.txt"
+    ) 
+    dictionary_path: str = Field(
+        default = "words.txt"
+    ) 
+    special_tone_dict_path: str = Field(
+        default = "special_tone_dict.txt"
+    ) 
 
 class CountSyllablePoemsConfig(BaseModel):
     masked_words: List[Dict[str, Any]] = Field(default=[])
     idx_masked_words: set = Field(default=set())
     token_masked_words: str = Field(default="MASKED_WORD")
+
+class MaskErrorTokenizationConfig(BaseModel):
+    poetic_config: PoeticRulesConfig = Field(default=PoeticRulesConfig())
+    count_syllable_config: CountSyllablePoemsConfig = Field(default=CountSyllablePoemsConfig())

@@ -1,4 +1,4 @@
-from mtm.mtm.configs import CountSyllablePoemsConfig
+from ..configs import CountSyllablePoemsConfig
 
 class CountSyllablePoems:
     def __init__(self, config: CountSyllablePoemsConfig):
