@@ -623,7 +623,7 @@ class PoeticRules:
           return
       stanza = self.preprocess_stanza(stanza)
       stanza = self.check_rhyme_stanza(stanza, tag) # Create and record error unstructured sentences
-    #   stanza, sentences_correct_format = self.check_tone_stanza(stanza, tag)
+      stanza, sentences_correct_format = self.check_tone_stanza(stanza, tag)
       sentences_correct_format = stanza
       return stanza, sentences_correct_format
 

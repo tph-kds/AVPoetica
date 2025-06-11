@@ -1,6 +1,7 @@
 import os 
 import sys
 
+from typing import Optional, List, Dict, Union, Any
 from ..configs import (
     MaskErrorTokenizationConfig,
     CountSyllablePoemsConfig,
@@ -16,6 +17,7 @@ class MaskErrorTokenization:
 
         self.poetic_config = met_config.poetic_config
         self.count_syllable_config = met_config.count_syllable_config
+        self.token_masked_words = self.count_syllable_config.token_masked_words
     
 
     def _run_poetic_rule(
@@ -97,17 +99,119 @@ class MaskErrorTokenization:
         luc_bat = False
         print(f"poem_input: {poem_input}")
         sentences = poem_input.split("\n")[:2]
+        sentences_2 = poem_input.split("\n")[2:4]
         print(f"sentences: {sentences}")
 
         if len(sentences[0].strip().split(" ")) == 6 and len(sentences[1].strip().split(" ")) == 8:
-            luc_bat = True
+            if len(sentences_2[0].strip().split(" ")) == 6 and len(sentences_2[1].strip().split(" ")) == 8:
+                luc_bat = True
 
         return luc_bat
+    
+    def _run_masked_count_syllables(
+              self,
+              masked_poem_input: str,
+              luc_bat: bool
+    ) -> str:
+        """
+        A function mask (line_relatedSentence) token into the final masked poem
+
+        Args:
+            stanza: stanza to check
+            luc_bat: whether or not the stanza is LỤC BÁT type stanza or not
+
+        Returns:
+            masked_poem(str): poem with error tokenization masked
+        """ 
+        first_sentence = True
+        j = 1
+        sentences = masked_poem_input.split("\n")
+        for i, sentence in enumerate(sentences):
+            if luc_bat:
+                if first_sentence:
+                    sentence = sentence + " " + f"(6_{j})"
+                    first_sentence = False
+                else:
+                    sentence = sentence + " " + f"(8_{j})"
+                    first_sentence = True
+                    j += 1
+            else:
+                sentence = sentence + " " + f"(7_{i+1})"
+
+            sentences[i] = sentence
+
+        return "\n".join(sentences)
+
+        
+
+    def _run_masked_words(
+            self,
+            poem_input: str,
+            idx_masked_words: List[int],
+            masked_words: List[Dict[str, Any]],
+            luc_bat: bool
+    ):
+        """ 
+            A Function implement to mask error tokenization into the original stanza (poem input)
+
+            Args:
+                poem_input(str): poem input  to check
+                idx_masked_words(Set(int)): index of masked words
+                masked_words(List[Dict[str, Any]]): list of masked words
+
+            Returns:
+                masked_poem(str): poem with error tokenization masked
+        """
+
+        final_poem = ""
+        
+        sentences = poem_input.split("\n")
+        for idx, masked_word in zip(idx_masked_words, masked_words):
+            #  Split idx to get rows and cols (1_6) ==> rows = 1, cols = 6
+            rows, cols = idx.split("_")[0], idx.split("_")[1]
+            rows, cols = int(rows) - 1, int(cols) - 1
+
+            if luc_bat:
+                # Handle the wrong case if the stanza lack  or redundant word
+                if masked_word["word"] == "missing":
+                    # Replace missing word phrase
+                    words[cols] = f"[{self.token_masked_words}]"
+                    continue
+                elif masked_word["word"] == "reductant":
+                    # Replace wrong word phrase
+                    words[cols - 1:] = [f""]*2
+                    words[cols] = f"[{self.token_masked_words}]"
+                    continue
+
+                # Replace masked word phrase
+                words = sentences[rows].split(" ")
+                if rows % 2 == 0 and cols == 5:
+                        words[cols - 1:] = [f"[{self.token_masked_words}]"]*2
+                elif rows % 2 != 0 and cols == 5:
+                        words[cols - 1:] = [f"[{self.token_masked_words}]"]*4
+                else:
+                    words[cols] = f"[{self.token_masked_words}]"
+
+                # Join all words into the orignal sentence
+                sentences[rows] = " ".join(words)
+            
+            else:
+                # Replace masked word phrase
+                words = sentences[rows].split(" ")
+                words[cols] = f"[{self.token_masked_words}]"
+
+                # Join all words into the orignal sentence
+                sentences[rows] = " ".join(words)
+
+        final_poem = "\n".join(sentences)
+        return poem_input, final_poem
+
+
 
     def mask_error_tokenization(
             self,
             poem_input: str
-    ):
+    ) -> str:
         """
             This is a main function to mask error tokenization
 
@@ -134,7 +238,26 @@ class MaskErrorTokenization:
             luc_bat = luc_bat
         )
 
-        print(f"cs_idx_masked_words: {cs_idx_masked_words} \n cs_masked_words: {cs_masked_words} \n pr_idx_masked_words: {pr_idx_masked_words} \n pr_masked_words: {pr_masked_words} \n")
+        # combine all errors of count syllables and poetic rule problems
+        combined_idx_masked_words = set()
+        combined_idx_masked_words.update(cs_idx_masked_words)
+        combined_idx_masked_words.update(pr_idx_masked_words)
+        combined_masked_words = cs_masked_words + pr_masked_words
 
+        print(f" cs_idx_masked_words: {cs_idx_masked_words} \n cs_masked_words: {cs_masked_words} \n pr_idx_masked_words: {pr_idx_masked_words} \n pr_masked_words: {pr_masked_words} \n")
+        print(f" combined_idx_masked_words: {combined_idx_masked_words} \n combined_masked_words: {combined_masked_words} \n")
+        # print(sorted(list(combined_idx_masked_words)))
+
+        poem_input, masked_poem = self._run_masked_words(
+            poem_input = poem_input,
+            idx_masked_words = sorted(list(combined_idx_masked_words)),
+            masked_words = combined_masked_words,
+            luc_bat = luc_bat
+        )
+
+        return poem_input,  self._run_masked_count_syllables(
+            masked_poem_input = masked_poem,
+            luc_bat = luc_bat
+        )
 
 

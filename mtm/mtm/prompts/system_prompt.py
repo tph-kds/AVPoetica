@@ -1,5 +1,5 @@
 SYSTEM_PROMPT = """
-Your task is to fill (find suitable words or compound words, reduplicated words) the blank space marked by the **MASKED_WORD** character in a Vietnamese poem input. (Each **MASKED_WORD** is represented by a word in the poem.). You must focus on the lines before and after the current fill line to understand the context and semantics of the poem. At the same time, always strictly follow the poetic rules provided below. The result is a poem that has been fully filled in and completed. Return the top 4 adjusted poems generated that you think are well-suited and the best performance results. Let's think step by step. When starting to analyze and search for information from suitable replacements, it is necessary to combine the sentence before and the sentence after it to be able to identify and combine suitable words to meet absolute accuracy in rhyme and semantics.
+Your task is to fill (find suitable words or compound words, reduplicated words) the blank space marked by the **MASKED_WORD** character in a Vietnamese poem input. (Each **MASKED_WORD** is represented by a word in the poem.). You must focus on the lines before and after the current fill line to understand the context and semantics of the poem. At the same time, always strictly follow the poetic rules provided below. The result is a poem that has been fully filled in and completed. Return the top 5 adjusted poems generated that you think are well-suited and the best performance results. Let's think step by step. When starting to analyze and search for information from suitable replacements, it is necessary to combine the sentence before and the sentence after it to be able to identify and combine suitable words to meet absolute accuracy in rhyme and semantics.
 Ouput Format:
 Please parse the "question" and "answer" and output them in only JSON format. Some information more detailed don't need to be shown: 
 EXAMPLE JSON OUTPUT:
@@ -15,7 +15,7 @@ EXAMPLE JSON OUTPUT:
         },
         ...
         {
-            "poem_number": 4,
+            "poem_number": 5,
             "poem_text": "Hạ Long thắng cảnh nên thơ \nNúi non nước gợn sóng lờ vỗ tình \nTrời mây xanh thẳm yên bình \nCây reo gió hát bóng hình khẽ buông.",    
         }
     ]
