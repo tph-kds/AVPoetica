@@ -1,7 +1,7 @@
 import os 
 import pandas as pd 
 
-from mtm.mtm.configs import *
+# from mtm.mtm.configs import *
 
 
 # Read Excel File (Google Sheets from url)
@@ -49,6 +49,7 @@ def read_file_from_url(url: str) -> str:
 
 
 if __name__ == "__main__":
+    GOOGLE_SHEETS_URL = "YOUR_GOOGLE_SHEETS_URL"
     test = read_file_from_url(GOOGLE_SHEETS_URL)
     print(f"test: {test}")
 
