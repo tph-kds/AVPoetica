@@ -93,7 +93,7 @@ if __name__ == "__main__":
             INCLUDE_REASONING=INCLUDE_REASONING
         ))
 
-    poem_inputs, corrected_poems, prompt_inputs, top_k_poems, generated_times, corrected_scores = []*6
+    poem_inputs, corrected_poems, prompt_inputs, top_k_poems, generated_times, corrected_scores =  [[] for _ in range(6)]
     
     df = pd.DataFrame(
         columns=[
