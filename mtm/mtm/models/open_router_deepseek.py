@@ -23,12 +23,6 @@ class OpenRouterModel:
         self.INCLUDE_REASONING = model_config.INCLUDE_REASONING
 
 
-        self.messages = [
-            {
-                "role": "system", 
-                "content": self.SYSTEM_PROMPT
-            }
-        ]
 
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
@@ -49,36 +43,96 @@ class OpenRouterModel:
         Returns:
             Dict[str, Any]: The response from Deepseek - Return top 10 poems from Deepseek
         """
-        self.messages.append(
-            {
-                "role": "user", 
-                "content": user_prompt
-            }
-        )
+        recall = False
+        i = 0
+        while recall == False:
+            print(f"[CALLING OPENROUTER]: Calling OpenRouter API {i + 1} times")
+            i += 1
+            self.messages = [
+                {
+                    "role": "system", 
+                    "content": self.SYSTEM_PROMPT
+                }
+            ]
+            self.messages.append(
+                {
+                    "role": "user", 
+                    "content": user_prompt
+                }
+            )
 
-        self.response = requests.post(
-            url=self.OPENROUTER_BASE_URL,
-            headers={
-                "Authorization": f"Bearer {self.OPENROUTER_API_KEY}",
-                "Content-Type": "application/json"
-                # "HTTP-Referer": self.RANKING_URL, # Optional. Site URL for rankings on openrouter.ai.
-                # "X-Title": self.RANKING_NAME, # Optional. Site title for rankings on openrouter.ai.
-            },
-            data=json.dumps({
-                "model": self.OPENROUTER_MODEL_NAME,
-                "messages": self.messages,
-                "stream": self.STREAM,
-                "temperature": self.TEMPERATURE,
-                "max_tokens": self.MAX_TOKENS,
-                "response_format": "json_object",
-                "include_reasoning": self.INCLUDE_REASONING, 
-            })
-        )
+            self.response = requests.post(
+                url=self.OPENROUTER_BASE_URL,
+                headers={
+                    "Authorization": f"Bearer {self.OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json"
+                    # "HTTP-Referer": self.RANKING_URL, # Optional. Site URL for rankings on openrouter.ai.
+                    # "X-Title": self.RANKING_NAME, # Optional. Site title for rankings on openrouter.ai.
+                },
+                data=json.dumps({
+                    "model": self.OPENROUTER_MODEL_NAME,
+                    "messages": self.messages,
+                    "stream": self.STREAM,
+                    "temperature": self.TEMPERATURE,
+                    "max_tokens": self.MAX_TOKENS,
+                    "response_format": "json_object",
+                    "include_reasoning": self.INCLUDE_REASONING, 
+                })
+            )
 
-        if self.response.status_code == 404:
-            return {"error_msg": "Not Found. Please check the configuration."}
+            if self.response.status_code == 404:
+                print('{"error_msg": "Wrong 404. Something went wrong. Please try again."}')
+                self.response = None    
+                continue
 
-        return self.response.json()['choices'][0]['message']['content']
+            if self.response.status_code != 200:
+                print(f"Response status code: {self.response.status_code}")
+                print('{"error_msg": "Something went wrong. Please try again."}')      
+                self.response = None    
+                continue
+            print(f"Response status code: {self.response}")
+            response_text = self.response.text.strip()
+            if not response_text:
+                print('{"error_msg": "Not get any response. Please try again."}')   
+                self.response = None
+                continue
+            
+            if "choices" not in self.response.json():
+                print('{"error_msg": "Not having choices. Something went wrong. Please try again."}')     
+                self.response = None    
+                continue
+            if len(self.response.json()['choices']) == 0:
+                print('{"error_msg": "Not having any element in choices. Something went wrong. Please try again."}')    
+                self.response = None    
+                continue
+            if "message" not in self.response.json()['choices'][0]:
+                print('{"error_msg": "Not having message in choices. Something went wrong. Please try again."}')    
+                self.response = None    
+                continue
+            
+            if "content" not in self.response.json()['choices'][0]['message']:
+                print('{"error_msg": "Not having content in message. Something went wrong. Please try again."}')    
+                self.response = None    
+                continue
+            
+            if not (
+                (self.response.json()['choices'][0]['message']['content'].strip().startswith("{") and self.response.json()['choices'][0]['message']['content'].strip().endswith("}")) or
+                (self.response.json()['choices'][0]['message']['content'].strip().startswith("```json") and self.response.json()['choices'][0]['message']['content'].strip().endswith("```"))
+            ):
+                print('{"error_msg": "Not having json format. Something went wrong. Please try again."}')    
+                self.response = None    
+                continue
+
+            if i >= 10:
+                print('{"error_msg": "Requesting Timeout Error. Please try again."}')    
+                self.response = None    
+                return None, i
+
+            if self.response.status_code == 200:
+                recall = True
+                break
+
+        return self.response.json()['choices'][0]['message']['content'], i
 
         # self.messages.append(
         #     {

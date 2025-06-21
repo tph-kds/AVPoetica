@@ -1,5 +1,6 @@
 import os 
 import sys
+import unicodedata
 
 from typing import Optional, List, Dict, Union, Any
 from ..configs import (
@@ -98,12 +99,21 @@ class MaskErrorTokenization:
         #  Only check the first two line of the stanza
         luc_bat = False
         print(f"poem_input: {poem_input}")
-        sentences = poem_input.split("\n")[:2]
-        sentences_2 = poem_input.split("\n")[2:4]
-        print(f"sentences: {sentences}")
+        
+        # sentences = poem_input.split("\n")[:2]
+        # sentences_2 = poem_input.split("\n")[2:4]
+        # print(f"sentences: {sentences}")
 
-        if len(sentences[0].strip().split(" ")) == 6 and len(sentences[1].strip().split(" ")) == 8:
-            if len(sentences_2[0].strip().split(" ")) == 6 and len(sentences_2[1].strip().split(" ")) == 8:
+        # if len(sentences[0].strip().split(" ")) == 6 and len(sentences[1].strip().split(" ")) == 8:
+        #     if len(sentences_2[0].strip().split(" ")) == 6 and len(sentences_2[1].strip().split(" ")) == 8:
+        #         luc_bat = True
+        lines = [line.strip() for line in poem_input.strip().split("\n") if line.strip()]
+        print(f"2 first lines: {lines[:2]}")
+        print(f"2 next lines: {lines[2:4]}")
+
+        if len(lines) >= 4:
+            if len(lines[0].split()) == 6 and len(lines[1].split()) == 8 \
+            and len(lines[2].split()) == 6 and len(lines[3].split()) == 8:
                 luc_bat = True
 
         return luc_bat
@@ -172,19 +182,18 @@ class MaskErrorTokenization:
             rows, cols = int(rows) - 1, int(cols) - 1
 
             if luc_bat:
+                # Replace masked word phrase
+                words = sentences[rows].split(" ")
                 # Handle the wrong case if the stanza lack  or redundant word
                 if masked_word["word"] == "missing":
                     # Replace missing word phrase
-                    words[cols] = f"[{self.token_masked_words}]"
-                    continue
+                    words.append(f"[{self.token_masked_words}]")
+
                 elif masked_word["word"] == "reductant":
                     # Replace wrong word phrase
                     words[cols - 1:] = [f""]*2
                     words[cols] = f"[{self.token_masked_words}]"
-                    continue
 
-                # Replace masked word phrase
-                words = sentences[rows].split(" ")
                 if rows % 2 == 0 and cols == 5:
                         words[cols - 1:] = [f"[{self.token_masked_words}]"]*2
                 elif rows % 2 != 0 and cols == 5:
@@ -198,7 +207,18 @@ class MaskErrorTokenization:
             else:
                 # Replace masked word phrase
                 words = sentences[rows].split(" ")
-                words[cols] = f"[{self.token_masked_words}]"
+                # print(f"words: {words}")
+                                # Handle the wrong case if the stanza lack  or redundant word
+                if masked_word["word"] == "missing":
+                    # print("missing")
+                    # Replace missing word phrase
+                    words.append(f"[{self.token_masked_words}]")
+                elif masked_word["word"] == "reductant":
+                    # Replace wrong word phrase
+                    words[cols - 1:] = [f""]*2
+                    words[cols] = f"[{self.token_masked_words}]"
+                else:
+                    words[cols] = f"[{self.token_masked_words}]"
 
                 # Join all words into the orignal sentence
                 sentences[rows] = " ".join(words)
@@ -206,12 +226,87 @@ class MaskErrorTokenization:
         final_poem = "\n".join(sentences)
         return poem_input, final_poem
 
+    def _check_error_vietnamese_words(
+       self,
+       poem_input: str
+    ): 
+        poem_input = unicodedata.normalize('NFC', poem_input)
+        # Define valid Vietnamese letters and characters
+        import re
+        vietnamese_chars = (
+            "aàáảãạăằắẳẵặâầấẩẫậ"
+            "bcdđeèéẻẽẹêềếểễệ"
+            "fgh"
+            "iìíỉĩị"
+            "jklmnoòóỏõọôồốổỗộơờớởỡợ"
+            "pqrstuùúủũụưừứửữự"
+            "vxyỳýỷỹỵ"
+            "z"
+            "AÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬ"
+            "BCDĐEÈÉẺẼẸÊỀẾỂỄỆ"
+            "FGH"
+            "IÌÍỈĨỊ"
+            "JKLMNOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢ"
+            "PQRSTUÙÚỦŨỤƯỪỨỬỮỰ"
+            "VXYỲÝỶỸỴ"
+            "Z"
+        )
+
+        # Also allow space, comma, period, colon, semicolon, dash, question/exclamation mark, quotes
+        allowed_chars = set(vietnamese_chars + " ,.!?:;–\n\t\"'")
+
+
+        # def mask_invalid_characters(text, allowed_chars, mask=self.token_masked_words):
+        #     new_lines = []
+        #     for line in text.strip().split("\n"):
+        #         new_line = ""
+        #         for ch in line:
+        #             if ch not in allowed_chars:
+        #                 new_line += "[{}]".format(mask)
+        #             else:
+        #                 new_line += ch
+        #         new_lines.append(new_line)
+        #     return "\n".join(new_lines)
+                # === Function to mask entire words ===
+        def mask_invalid_words(
+                text: str, 
+                allowed_chars: set, 
+                mask: str = self.token_masked_words
+        ) -> str:
+            new_lines = []
+            for line in text.strip().split("\n"):
+                words = re.findall(r'\S+', line)  # split by spaces but preserve punctuation
+                masked_line = []
+                for word in words:
+                    if all(char in allowed_chars for char in word):
+                        masked_line.append(word)
+                    else:
+                        masked_line.append(f"[{mask}]")
+                new_lines.append(' '.join(masked_line))
+            return "\n".join(new_lines)
+
+        # Apply masking
+        masked_text = mask_invalid_words(poem_input, allowed_chars)
+        def normalize_spaces(text: str) -> str:
+            # Xử lý từng dòng riêng biệt, bỏ khoảng trắng đầu/cuối và chuẩn hóa khoảng trắng giữa từ
+            lines = [re.sub(r"\s+", " ", line.strip()) for line in text.strip().split("\n")]
+            return "\n".join(lines)
+
+        # Apply normalization
+        print(f"Normalizing spaces...")
+        masked_text = normalize_spaces(masked_text)
+
+
+        # Output
+        return masked_text
+
+
 
 
     def mask_error_tokenization(
             self,
             poem_input: str
-    ) -> str:
+    ):
         """
             This is a main function to mask error tokenization
 
@@ -222,6 +317,10 @@ class MaskErrorTokenization:
             Returns:
                 masked_poem: poem with error tokenization masked
         """
+        # Check Vietnamese words
+        print(f"poem input before check: {poem_input}")
+        poem_input = self._check_error_vietnamese_words(poem_input = poem_input)
+        print(f"poem input after check: {poem_input}")
         # check luc bat
         luc_bat = self._check_luc_bat(poem_input = poem_input)
         print(f"LUC BÁT TYPE: {luc_bat}")
@@ -242,20 +341,33 @@ class MaskErrorTokenization:
         combined_idx_masked_words = set()
         combined_idx_masked_words.update(cs_idx_masked_words)
         combined_idx_masked_words.update(pr_idx_masked_words)
-        combined_masked_words = cs_masked_words + pr_masked_words
+        combined_masked_words = pr_masked_words + cs_masked_words
 
         print(f" cs_idx_masked_words: {cs_idx_masked_words} \n cs_masked_words: {cs_masked_words} \n pr_idx_masked_words: {pr_idx_masked_words} \n pr_masked_words: {pr_masked_words} \n")
         print(f" combined_idx_masked_words: {combined_idx_masked_words} \n combined_masked_words: {combined_masked_words} \n")
         # print(sorted(list(combined_idx_masked_words)))
 
+        # Sort combined_idx_masked_words
+        combined_idx_masked_words_sorted = sorted(
+            combined_idx_masked_words,
+            key=lambda x: tuple(map(int, x.split('_')))
+        )
+
+        # Sort combined_masked_words by line and position
+        combined_masked_words_sorted = sorted(
+            combined_masked_words,
+            key=lambda x: (x['line'], x['position'])
+        )
+        print(f"combined_idx_masked_words_sorted: {combined_idx_masked_words_sorted} \n combined_masked_words_sorted: {combined_masked_words_sorted} \n")
+
         poem_input, masked_poem = self._run_masked_words(
             poem_input = poem_input,
-            idx_masked_words = sorted(list(combined_idx_masked_words)),
-            masked_words = combined_masked_words,
+            idx_masked_words = combined_idx_masked_words_sorted,
+            masked_words = combined_masked_words_sorted,
             luc_bat = luc_bat
         )
 
-        return poem_input,  self._run_masked_count_syllables(
+        return poem_input, luc_bat,  self._run_masked_count_syllables(
             masked_poem_input = masked_poem,
             luc_bat = luc_bat
         )

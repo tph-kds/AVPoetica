@@ -1,18 +1,22 @@
 import os 
+import re
 import time 
 import json
 import  pandas as pd
+import numpy as np
 
 from mtm.models import (
     DeepSeekModel, 
     OpenRouterModel
 )
+from mtm.processes import RhymesTonesMetrics
 from mtm.configs.schemas import (
     DeepSeekModelConfig, 
     OpenRouterModelConfig,
     PoeticRulesConfig,
     CountSyllablePoemsConfig,
-    MaskErrorTokenizationConfig
+    MaskErrorTokenizationConfig,
+    PoeticRulesMetricsConfig
 )
 from mtm.configs import *
 from mtm.prompts import SYSTEM_PROMPT
@@ -52,7 +56,54 @@ def read_datasets(
     return dataset[f"{column}"]
 
 
+def calculate_top_k(
+        poem_inputs: Dict[str, Any],
+        metrics: RhymesTonesMetrics,
+        all_responses: List[Dict[str, Any]],
+        tag: str,
+        k: int = 3,
+):
+    """
+        A function to check and calculate top-k score of  generated poems from OpenRouterModel and DeepSeekModel
+
+        Args:
+            poem_inputs (Dict[str, Any]): poems generated from OpenRouterModel and DeepSeekModel
+            metrics (RhymesTonesMetrics): rhymes and tones metrics
+            tag (str): tag Input - type of poem
+            k (int, optional): top-k. Defaults to 3.
+
+        Returns:
+            top_k: top-k score
+
+    """
+    outputs = {}
+    poems = []
+    scores = []
+    for i, poem in enumerate(poem_inputs):
+        score = metrics.calculate_score(
+            poem=poem["poem_text"],
+            tag=tag
+        )
+        poems.append(poem["poem_text"])
+        scores.append(score)
+
+        # Add response to all_responses
+        poem_inputs[i]["score"] = score
+    top_k = sorted(zip(poems, scores), key=lambda x: x[1], reverse=True)[:k]
+    outputs["corrected_poem"] = top_k[0][0]
+    outputs["corrected_score"] = top_k[0][1]
+    outputs["top_k_corrected_score"] = np.mean(scores)
+
+    # Add all responses to all_responses
+    all_responses.append(poem_inputs)
+    return outputs
+        
+
 if __name__ == "__main__":
+
+    r_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    print(f"\n\n[ROOT_PATH]: {r_path} \n\n")
+
     data = read_datasets(
         path=GOOGLE_SHEETS_URL, 
         column="Qwen_output"
@@ -93,7 +144,20 @@ if __name__ == "__main__":
             INCLUDE_REASONING=INCLUDE_REASONING
         ))
 
-    poem_inputs, corrected_poems, prompt_inputs, top_k_poems, generated_times, corrected_scores =  [[] for _ in range(6)]
+    metrics_config =  PoeticRulesMetricsConfig(
+        vowels_dict_path = VOWELS_DICT_PATH,
+        rhyme_dict_path = RHYME_DICT_PATH,
+        tone_dict_path = TONE_DICT_PATH,
+        dictionary_path = DICTIONARY_PATH,
+        special_tone_dict_path = SPECIAL_TONE_DICT_PATH
+    )
+
+    metrics = RhymesTonesMetrics(
+        metrics_config = metrics_config
+    )
+
+
+    all_responses, poem_inputs, corrected_poems, prompt_inputs, top_k_poems, generated_times, corrected_scores, top_k_corrected_scores =  [[] for _ in range(8)]
     
     df = pd.DataFrame(
         columns=[
@@ -111,51 +175,175 @@ if __name__ == "__main__":
 
     #  Running all around the dataset for evaluating the model
     for i in range(len(data)):
-        poem_input, final_poem = met.mask_error_tokenization(
+        print(f"\n[MASK ERROR TOKENIZATION]: Begin processing stanza {i + 1}...")
+        poem_input, luc_bat, final_poem = met.mask_error_tokenization(
             poem_input = data[i]
         )
         print(final_poem)
+        print(f"\nCompleted MASK ERROR TOKENIZATION SUCCESSFULLY")
+        tag = "68" if luc_bat else "78"
+
         user_prompt = create_prompt_user(user_prompt = final_poem)
         print(user_prompt)
-
+        # Check score before calling reasoning model
+        check_score = metrics.calculate_score(
+            poem=poem_input,
+            tag=tag
+        )
         #  Calling Reasoning Model From OpenRouter Framework
         #  calculate time
         start_time = time.time()
-        response = openrouter_model.calling_model(user_prompt=user_prompt)
+        if check_score >= 100.0:
+            json_response, recall_counts = {"responses": [{"poem_number": 1, "poem_text": poem_input}]}, 1
+        else:
+            print(f"[OPENROUTER MODEL]: Begin processing stanza ...")
+            response, recall_counts = openrouter_model.calling_model(user_prompt=user_prompt)
+            if response == None:
+                json_response, recall_counts = {"responses": [{"poem_number": 1, "poem_text": poem_input}]}, -1
+            print(f"json_response: \n{response}")
+            
+            if response.startswith("```"):
+                match = re.search(r'```json\s*(.*?)```', response, re.DOTALL)
+                if match:
+                    response = match.group(1).strip()
+            def clean_json_string(bad_json):
+                # Remove all `+` signs
+                cleaned = re.sub(r'\s*\+\s*', '', bad_json)
+                return cleaned
+            response = clean_json_string(response)
+            response = response.replace('""', '')
+            # This regex will handle newlines inside the values
+            response = re.sub(r'(?<=: ")(.*?)(?=")', lambda m: m.group(0).replace('\n', '\\n'), response, flags=re.DOTALL)
+
+            try:
+                json_response = json.loads(response)
+            except json.JSONDecodeError as e:
+                print("Failed to parse JSON from response:", e)
+            # json_response = json.loads(response)
         # End time
         end_time = time.time()
+        print(f"Completed OPENROUTER MODEL SUCCESSFULLY")
 
         # Calculate range of runing time
         range_time = end_time - start_time
 
-        # Calculate the final poem
-        final_poem = ""
-        corrected_score = 0
-        corrected_poem = ""
+        print(f"[CACULATE TOP K]: Begin processing stanza ...")
+        # Calculate the final poem which would be saved including 
+        # all_response_poems : having both original and top k generated poems
+        # corrected_poem : having only top 1 generated poems having highest corrected score
+        # corrected_score : having only top 1 generated poems having highest corrected score
+        results = calculate_top_k(
+            poem_inputs=json_response["responses"],
+            metrics=metrics,
+            all_responses=all_responses,
+            tag = tag,
+            k=1
+        )
+        # final_poem = ""
+        corrected_score = results["corrected_score"]
+        corrected_poem = results["corrected_poem"]
+        top_k_corrected_score = results["top_k_corrected_score"]
 
         
         # Save data to list storage
-        poem_inputs.append(data[i])
-        generated_times.append(range_time)
-        corrected_poems.append(corrected_poem)
-        prompt_inputs.append(user_prompt)
-        top_k_poems.append(response.json())
-        corrected_scores.append(corrected_score)
+        # all_responses.extend(response["responses"])
+        # poem_inputs.append(data[i])
+        # generated_times.append(range_time)
+        # corrected_poems.append(corrected_poem)
+        # prompt_inputs.append(user_prompt)
+        # top_k_poems.append(json_response["responses"])
+        # corrected_scores.append(corrected_score)
+        # top_k_corrected_scores.append(top_k_corrected_score)
+        print(f"Completed CACULATE TOP K SUCCESSFULLY")
+        print(f"RUNNING STANZA {i + 1} COMPLETED SUCCESSFULLY")
 
-        break
+        print(f"poem_input: {data[i]}")
+        print(f"final_poem: {corrected_poem}")
+        print(f"user_prompt: {user_prompt}")
+        print(f"top_k: {json_response['responses']}")
+        print(f"time: {range_time}")
+        print(f"corrected_score: {corrected_score}")
+        print(f"corrected_score_topk: {top_k_corrected_score}")
 
-    print(f"\nBeginning saving result to csv file at {os.getcwd()}/result.csv\n")
 
-    #  Save csv file 
-    df["poem_input"] = poem_inputs
-    df["final_poem"] = corrected_poems
-    df["user_prompt"] = prompt_inputs
-    df["top_k"] = top_k_poems
-    df["time"] = generated_times
-    df["corrected_score"] = corrected_scores
-    df.to_csv("result.csv", index=False)
+        # print(f"Resetting request rate and calling the model after {i + 1} stanzas... Sleeping for 60 seconds...")
 
-    print(f"\nImplemented saving result to csv file at {os.getcwd()}/result.csv\n")
+        # Build DataFrame directly from data
+        df_extened = pd.DataFrame({
+            "poem_input": [data[i]],
+            "final_poem": [corrected_poem],
+            "user_prompt": [user_prompt],
+            "top_k": [str(json_response["responses"])],
+            "time": [range_time],
+            "corrected_score": [corrected_score],
+            "corrected_score_topk": [top_k_corrected_score],
+            "recall_counts": [recall_counts],
+        },
+            index=None,
+            dtype=str
+        )
+
+        # Append to CSV
+        df_path = os.path.join(r_path, "result.csv")
+        if not os.path.exists(df_path):
+            df_extened.to_csv(df_path, mode="w", index=False)
+        elif os.path.getsize(df_path) == 0:
+            df_extened.to_csv(df_path, mode="w", header=True, index=False) 
+        else:
+            df_extened.to_csv(df_path, mode="a", header=not os.path.exists(df_path), index=False)
+        print(f"Saved to CSV: {df_path} at stanza {i + 1}")
+
+        # Handle JSON
+        json_data_path = os.path.join(r_path, "all_responses.json")
+        print(f"Saving result to JSON: {json_data_path}  at stanza {i + 1}")
+        if os.path.exists(json_data_path):
+            with open(json_data_path, "r", encoding="utf-8") as file:
+                content = file.read().strip()
+                if content == "":
+                    existing_data = []
+                else:
+                    existing_data = json.loads(content)
+        else:
+            existing_data = []
+
+        existing_data.extend(all_responses)
+
+        with open(json_data_path, "w", encoding="utf-8") as file:
+            json.dump(existing_data, file, indent=4, ensure_ascii=False)
+
+
+        if i % 5 == 0:
+            print(f"Sleeping for 60 seconds... at stanza {i + 1}")
+            time.sleep(60)
+    # print(f"\nBeginning saving result to csv file at {os.getcwd()}/result.csv\n")
+
+    # #  Save csv file 
+    # df["poem_input"] = poem_inputs
+    # df["final_poem"] = corrected_poems
+    # df["user_prompt"] = prompt_inputs
+    # df["top_k"] = top_k_poems
+    # df["time"] = generated_times
+    # df["corrected_score"] = corrected_scores
+    # df["corrected_score_topk"] = top_k_corrected_scores
+
+    # print(f"poem_inputs: \n{poem_inputs}\n")
+    # print(f"final_poems: \n{corrected_poems}\n")
+    # print(f"prompt_inputs: \n{prompt_inputs}\n")
+    # print(f"top_k_poems: \n{top_k_poems}\n")
+    # print(f"generated_times: \n{generated_times}\n")
+    # print(f"corrected_scores: \n{corrected_scores}\n")
+    # print(f"top_k_corrected_scores: \n{top_k_corrected_scores}\n")
+    # df.to_csv("result.csv", index=False)
+
+
+    # print(f"Implemented saving result to csv file at {os.getcwd()}/result.csv\n")
+
+    # # Save json file for all responses
+    # print(f"Beginning saving result to json file at {os.getcwd()}/all_responses.json\n")
+    # with open("all_responses.json", "w", encoding="utf-8") as f:
+    #     json.dump(all_responses, f, ensure_ascii=False, indent=4)
+
+    # print(f"Implemented saving result to json file at {os.getcwd()}/all_responses.json\n")
 
 
 

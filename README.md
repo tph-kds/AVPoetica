@@ -39,10 +39,10 @@ This module is part of a larger project on **Vietnamese Poetry Generation with L
 ```bash
 av-poetica/
 │
-├── agent/                # Core agent logic and prompt templates
-├── processing/           # Post-processing rules & poetic constraints
-├── examples/             # Input/output poetry samples
-├── tests/                # Unit tests for formatting and logic
+├── .github/                # Core CI code 
+├── avp/           # Agent Mode to be used for mutil-tasking
+├── mtm/             # Main core for MT-Reasoning Language Model
+├── tests/                # Unit tests for all logics and checking before hanlding any errors
 └── README.md             # Project documentation
 ```
 
@@ -83,6 +83,7 @@ This module is part of the broader research & engineering project:
 ## 📩 Contact & Collaboration
 
 - Author: [Trần Phi Hùng](https://github.com/tph-kds)
+- Co-Author: [Lâm Gia Phú]()
 - Email: tranphihung8383@gmail.com
 - Open to contributions, ideas, or research collaborations in NLP, poetry generation, and agent-based LLM systems.
 

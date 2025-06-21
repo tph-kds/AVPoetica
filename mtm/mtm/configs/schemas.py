@@ -83,3 +83,22 @@ class CountSyllablePoemsConfig(BaseModel):
 class MaskErrorTokenizationConfig(BaseModel):
     poetic_config: PoeticRulesConfig = Field(default=PoeticRulesConfig())
     count_syllable_config: CountSyllablePoemsConfig = Field(default=CountSyllablePoemsConfig())
+
+
+
+class PoeticRulesMetricsConfig(BaseModel):
+    vowels_dict_path: str = Field(
+        default = "vowels.txt"
+    )
+    rhyme_dict_path: str = Field(
+        default = "rhymes.txt"
+    ) 
+    tone_dict_path : str = Field(
+        default = "tone_dict.txt"
+    ) 
+    dictionary_path: str = Field(
+        default = "words.txt"
+    ) 
+    special_tone_dict_path: str = Field(
+        default = "special_tone_dict.txt"
+    ) 

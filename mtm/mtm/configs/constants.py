@@ -4,10 +4,13 @@ BASE_URL="https://api.deepseek.com"
 DEEPSEEK_MODEL_NAME = "deepseek-reasoner"
 STREAM = False
 TEMPERATURE = 0.8
-MAX_TOKENS = 10000
+MAX_TOKENS = 0
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL_NAME = "deepseek/deepseek-r1-0528:free"
+# OPENROUTER_MODEL_NAME = "qwen/qwq-32b:free"
+# OPENROUTER_MODEL_NAME = "deepseek/deepseek-r1-0528-qwen3-8b:free"
+
 RANKING_URL = None
 RANKING_NAME = None
 INCLUDE_REASONING = True

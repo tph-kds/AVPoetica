@@ -180,4 +180,7 @@ avp_env/*
 note.md
 **/prompt_test.py 
 **/assets/*
+**/stores/*
 response.json
+all_responses.json 
+result.csv
