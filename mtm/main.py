@@ -5,12 +5,12 @@ import json
 import  pandas as pd
 import numpy as np
 
-from mtm.models import (
+from .mtm.models import (
     DeepSeekModel, 
     OpenRouterModel
 )
-from mtm.processes import RhymesTonesMetrics
-from mtm.configs.schemas import (
+from .mtm.processes import RhymesTonesMetrics
+from .mtm.configs.schemas import (
     DeepSeekModelConfig, 
     OpenRouterModelConfig,
     PoeticRulesConfig,
@@ -18,11 +18,11 @@ from mtm.configs.schemas import (
     MaskErrorTokenizationConfig,
     PoeticRulesMetricsConfig
 )
-from mtm.configs import *
-from mtm.prompts import SYSTEM_PROMPT
+from .mtm.configs import *
+from .mtm.prompts import SYSTEM_PROMPT
 
-from mtm.processes import MaskErrorTokenization
-from mtm.utils import read_file_from_url
+from .mtm.processes import MaskErrorTokenization
+from .mtm.utils import read_file_from_url
 
 def create_prompt_user(user_prompt: str) -> str:
     prompt = f"""
